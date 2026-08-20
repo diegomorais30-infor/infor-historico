@@ -1,3 +1,94 @@
-import { notFound } from "next/navigation";
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-export default async function PublicEquipment({params}:{params:Promise<{token:string}>}){const {token}=await params;const s=await createClient();const {data:e}=await s.from("equipment").select("code,brand,model,serial_number,location,status,clients(name)").eq("qr_token",token).single();if(!e)notFound();const {data:m}=await s.from("maintenance").select("service_date,maintenance_type,service_performed").eq("equipment_id",(await s.from("equipment").select("id").eq("qr_token",token).single()).data?.id??"").order("service_date",{ascending:false});return <main className="wrap"><div className="card" style={{maxWidth:760,margin:"30px auto"}}><div className="brand"><span className="circles"><i className="c"/><i className="c"/><i className="c"/></span><span>Infor Cartuchos</span></div><h1 className="title" style={{marginTop:24}}>{e.brand} {e.model}</h1><p className="muted">{e.code}</p><div className="grid g2"><div><b>Cliente</b><div>{e.clients?.name??"—"}</div></div><div><b>Nº de série</b><div>{e.serial_number??"—"}</div></div><div><b>Localização</b><div>{e.location??"—"}</div></div><div><b>Status</b><div><span className="badge">{e.status}</span></div></div></div><hr style={{border:0,borderTop:"1px solid #eee",margin:"22px 0"}}/><h2>Histórico de manutenções</h2>{(m??[]).map((x:any)=><div className="history" key={x.service_date+x.maintenance_type}><b>{x.maintenance_type}</b><div className="muted">{x.service_date}</div><div>{x.service_performed??"—"}</div></div>)}{!m?.length&&<p className="muted">Nenhuma manutenção registrada.</p>}</div></main>}
+
+export default async function PublicEquipment({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+
+  const supabase = await createClient();
+
+  const { data: equipment, error } = await supabase
+    .from("equipment")
+    .select("*")
+    .eq("code", token)
+    .single();
+
+  if (error || !equipment) {
+    notFound();
+  }
+
+  return (
+    <main
+      style={{
+        maxWidth: "800px",
+        margin: "40px auto",
+        padding: "24px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <h1>Infor Histórico</h1>
+
+      <p style={{ color: "#666" }}>
+        Histórico do equipamento
+      </p>
+
+      <hr />
+
+      <section style={{ marginTop: "24px" }}>
+        <h2>Equipamento</h2>
+
+        <p>
+          <strong>Código:</strong> {equipment.code}
+        </p>
+
+        <p>
+          <strong>Marca:</strong> {equipment.brand || "-"}
+        </p>
+
+        <p>
+          <strong>Modelo:</strong> {equipment.model || "-"}
+        </p>
+
+        <p>
+          <strong>Número de série:</strong>{" "}
+          {equipment.serial_number || "-"}
+        </p>
+
+        <p>
+          <strong>Localização:</strong>{" "}
+          {equipment.location || "-"}
+        </p>
+
+        <p>
+          <strong>Status:</strong>{" "}
+          {equipment.status || "-"}
+        </p>
+      </section>
+
+      <hr style={{ margin: "30px 0" }} />
+
+      <section>
+        <h2>Histórico de manutenção</h2>
+
+        <p style={{ color: "#666" }}>
+          Nenhuma manutenção registrada.
+        </p>
+      </section>
+
+      <footer
+        style={{
+          marginTop: "40px",
+          paddingTop: "20px",
+          borderTop: "1px solid #ddd",
+          color: "#777",
+          fontSize: "14px",
+        }}
+      >
+        Infor Cartuchos — Infor Histórico
+      </footer>
+    </main>
+  );
+}

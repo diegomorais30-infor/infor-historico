@@ -2,16 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function NovoCliente() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
   async function cadastrarCliente(formData: FormData) {
     "use server";
 
@@ -26,9 +16,7 @@ export default async function NovoCliente() {
     }
 
     const name = String(formData.get("name") || "").trim();
-    const contact_name = String(
-      formData.get("contact_name") || ""
-    ).trim();
+    const contact_name = String(formData.get("contact_name") || "").trim();
     const phone = String(formData.get("phone") || "").trim();
     const city = String(formData.get("city") || "").trim();
 
@@ -105,3 +93,118 @@ export default async function NovoCliente() {
             }}
           >
             Nome / Razão Social
+          </label>
+
+          <input
+            name="name"
+            type="text"
+            required
+            placeholder="Nome do cliente ou empresa"
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              border: "1px solid #ccc",
+              borderRadius: 8,
+              fontSize: 16,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label
+            style={{
+              display: "block",
+              fontWeight: 600,
+              marginBottom: 8,
+            }}
+          >
+            Nome do contato
+          </label>
+
+          <input
+            name="contact_name"
+            type="text"
+            placeholder="Pessoa de contato"
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              border: "1px solid #ccc",
+              borderRadius: 8,
+              fontSize: 16,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label
+            style={{
+              display: "block",
+              fontWeight: 600,
+              marginBottom: 8,
+            }}
+          >
+            Telefone
+          </label>
+
+          <input
+            name="phone"
+            type="text"
+            placeholder="(38) 99999-9999"
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              border: "1px solid #ccc",
+              borderRadius: 8,
+              fontSize: 16,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 30 }}>
+          <label
+            style={{
+              display: "block",
+              fontWeight: 600,
+              marginBottom: 8,
+            }}
+          >
+            Cidade
+          </label>
+
+          <input
+            name="city"
+            type="text"
+            placeholder="Ex.: Montes Claros"
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              border: "1px solid #ccc",
+              borderRadius: 8,
+              fontSize: 16,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <button
+          type="submit"
+          style={{
+            background: "#1677ff",
+            color: "#fff",
+            padding: "12px 24px",
+            border: "none",
+            borderRadius: 8,
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Cadastrar cliente
+        </button>
+      </form>
+    </main>
+  );
+}

@@ -24,7 +24,7 @@ export default async function NovoCliente() {
       return;
     }
 
-    const { error } = await supabase.from("clientes").insert({
+    const { error } = await supabase.from("clients").insert({
       name,
       contact_name,
       phone,

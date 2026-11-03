@@ -1,7 +1,8 @@
- "use client";
+"use client";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Login(){
  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
@@ -15,6 +16,7 @@ export default function Login(){
     <label className="field">Senha<input type="password" required value={password} onChange={e=>setPassword(e.target.value)} /></label>
     {error&&<div className="error">{error}</div>}
     <button className="btn primary" disabled={loading}>{loading?"Entrando...":"Entrar"}</button>
+    <Link href="/cadastro" className="muted" style={{textAlign:"center"}}>Criar conta</Link>
    </form>
  </div></main>
 }

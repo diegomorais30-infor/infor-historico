@@ -11,7 +11,7 @@ export async function getContexto() {
 
   const { data: perfil } = await supabase
     .from("profiles")
-    .select("full_name, role, active, company_id, companies(name, plan, trial_ends_at, max_equipment)")
+    .select("full_name, role, active, company_id, companies(name, plan, trial_ends_at, max_equipment, whatsapp)")
     .eq("id", user.id)
     .single();
 

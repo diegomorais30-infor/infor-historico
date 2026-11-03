@@ -12,6 +12,7 @@ Uso interno da Infor Cartuchos e base para vender por mensalidade a outras empre
 - Peças e suprimentos com estoque mínimo e aviso de reposição
 - Início com preventivas dos próximos 30 dias, peças para repor e plano da empresa
 - Limite de impressoras por plano (teste: 7 dias e até 5 impressoras)
+- Chamados pelo QR code: o cliente pede manutenção na página da impressora (gera protocolo CH-000001 e abre o WhatsApp da empresa); a equipe atende na tela Chamados
 - Contratos de locação: mensalidade, franquia P&B/cor, excedente, vigência e reajuste; impressoras vinculadas ao contrato
 - Leituras mensais dos contadores (recusa número menor que o anterior)
 - Fechar mês: calcula páginas, excedente e total e gera a fatura do contrato
@@ -27,8 +28,8 @@ No Vercel, cadastre as mesmas variáveis em Settings → Environment Variables.
 
 ## Banco de dados (Supabase, projeto `infor-historico`)
 Tabelas: `companies`, `company_invites`, `profiles`, `clients`, `equipment`, `maintenance`, `parts`,
-`maintenance_parts`, `maintenance_files`, `contracts`, `meter_readings`, `invoices`. Pasta de arquivos privada: `maintenance-files`.
-A função pública `get_public_equipment(token)` alimenta a página do QR code.
+`maintenance_parts`, `maintenance_files`, `contracts`, `meter_readings`, `invoices`, `service_requests`. Pasta de arquivos privada: `maintenance-files`.
+As funções públicas `get_public_equipment(token)` e `create_service_request(...)` alimentam a página do QR code (a segunda limita 3 pedidos por hora por impressora).
 
 ## Pendências conhecidas
 - Portal do cliente (envio de leitura e chamados), ordens de serviço de balcão, precificador e financeiro (contas a receber)

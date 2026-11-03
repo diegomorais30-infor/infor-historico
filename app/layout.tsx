@@ -16,7 +16,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   let empresa = "";
   let papel = "";
+  let abertos = 0;
   if (user) {
+    const { count } = await supabase
+      .from("service_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "open");
+    abertos = count ?? 0;
     const { data } = await supabase
       .from("profiles")
       .select("role, companies(name)")
@@ -42,6 +48,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             {user && (
               <nav className="topnav">
                 <Link href="/dashboard">Início</Link>
+                <Link href="/chamados">Chamados{abertos > 0 ? ` (${abertos})` : ""}</Link>
                 <Link href="/equipamentos">Equipamentos</Link>
                 <Link href="/clientes">Clientes</Link>
                 <Link href="/contratos">Contratos</Link>

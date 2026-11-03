@@ -70,3 +70,21 @@ export function somaMes(ym: string, n: number) {
   const d = new Date(Date.UTC(a, m - 1 + n, 1));
   return d.toISOString().slice(0, 7);
 }
+
+export const STATUS_CHAMADO: Record<string, string> = {
+  open: "Aberto",
+  in_progress: "Em atendimento",
+  done: "Concluído",
+  canceled: "Cancelado",
+};
+
+// Telefone só com números e com o 55 do Brasil na frente (para links do WhatsApp)
+export function telefoneWhatsapp(tel: string) {
+  const n = (tel ?? "").replace(/\D/g, "");
+  return n.length <= 11 ? `55${n}` : n;
+}
+
+export function fmtDataHora(d?: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+}

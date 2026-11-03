@@ -24,6 +24,34 @@ async function convidar(formData: FormData) {
   redirect("/usuarios");
 }
 
+async function atualizarEmpresa(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: eu } = await supabase.from("profiles").select("company_id").eq("id", user.id).single();
+  const nome = String(formData.get("name") || "").trim();
+  if (nome.length < 2) redirect("/usuarios?erro=" + encodeURIComponent("Informe o nome da empresa."));
+
+  // WhatsApp: só números, com o 55 do Brasil na frente
+  let zap = String(formData.get("whatsapp") || "").replace(/\D/g, "");
+  if (zap && zap.length <= 11) zap = `55${zap}`;
+  if (zap && (zap.length < 12 || zap.length > 13)) {
+    redirect("/usuarios?erro=" + encodeURIComponent("WhatsApp inválido. Use DDD + número."));
+  }
+
+  const { error } = await supabase
+    .from("companies")
+    .update({ name: nome, whatsapp: zap || null })
+    .eq("id", eu?.company_id);
+  if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
+  revalidatePath("/usuarios");
+  redirect("/usuarios");
+}
+
 async function alterarPerfil(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -67,6 +95,28 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
           {erro}
         </div>
       )}
+
+      <form action={atualizarEmpresa} className="card grid g4" style={{ margin: "18px 0" }}>
+        <label className="field" style={{ gridColumn: "span 2" }}>
+          Nome da empresa
+          <input name="name" required defaultValue={(perfil as any)?.companies?.name ?? ""} />
+        </label>
+        <label className="field">
+          WhatsApp de atendimento
+          <input
+            name="whatsapp"
+            inputMode="tel"
+            placeholder="(38) 3213-4000"
+            defaultValue={(perfil as any)?.companies?.whatsapp ?? ""}
+          />
+        </label>
+        <div style={{ alignSelf: "end" }}>
+          <button className="btn primary">Salvar empresa</button>
+        </div>
+        <p className="muted" style={{ gridColumn: "1/-1", margin: 0, fontSize: 13 }}>
+          Este WhatsApp aparece na página do QR code para os clientes pedirem manutenção.
+        </p>
+      </form>
 
       <form action={convidar} className="card grid g4" style={{ margin: "18px 0" }}>
         <label className="field" style={{ gridColumn: "span 2" }}>

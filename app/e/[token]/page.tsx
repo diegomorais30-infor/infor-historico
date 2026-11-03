@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_EQUIPAMENTO, TIPOS_MANUTENCAO, fmtData } from "@/lib/format";
+import Solicitar from "./solicitar";
 
 export const metadata = { title: "Histórico do equipamento", robots: { index: false, follow: false } };
 
@@ -52,6 +53,14 @@ export default async function PaginaPublica({ params }: { params: Promise<{ toke
         </div>
       </div>
 
+      <Solicitar
+        token={token}
+        whatsapp={e.whatsapp ?? null}
+        code={e.code}
+        equipamento={`${e.brand ?? ""} ${e.model ?? ""}`.trim()}
+        local={e.location ?? null}
+      />
+
       <section className="card" style={{ marginTop: 18 }}>
         <h2>Histórico de manutenção</h2>
         {historico.map((m, i) => (
@@ -65,7 +74,7 @@ export default async function PaginaPublica({ params }: { params: Promise<{ toke
       </section>
 
       <p className="muted" style={{ marginTop: 24, fontSize: 13 }}>
-        Para registrar uma manutenção, entre no sistema com seu login.
+        Técnicos: para registrar uma manutenção, entre no sistema com seu login.
       </p>
     </main>
   );

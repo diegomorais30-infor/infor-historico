@@ -94,7 +94,7 @@ export default async function Chamados({
                   </td>
                   <td>
                     {eq ? (
-                      <Link href={`/equipamentos/${eq.id}`} style={{ color: "var(--blue)", fontWeight: 800 }}>
+                      <Link href={`/equipamentos/${eq.id}`} style={{ color: "var(--link)", fontWeight: 800 }}>
                         {eq.code}
                       </Link>
                     ) : (
@@ -114,7 +114,7 @@ export default async function Chamados({
                         href={`https://wa.me/${telefoneWhatsapp(c.requester_phone)}?text=${encodeURIComponent(resposta)}`}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ color: "var(--blue)", fontWeight: 700 }}
+                        style={{ color: "var(--link)", fontWeight: 700 }}
                       >
                         {c.requester_phone} · WhatsApp
                       </a>

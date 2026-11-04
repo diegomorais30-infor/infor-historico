@@ -189,7 +189,7 @@ export default async function DetalheContrato({
             {(instaladas ?? []).map((e: any) => (
               <tr key={e.id}>
                 <td>
-                  <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--blue)", fontWeight: 800 }}>
+                  <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--link)", fontWeight: 800 }}>
                     {e.code}
                   </Link>
                 </td>

@@ -1,110 +1,52 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { getContexto } from "@/lib/contexto";
 
 export default async function Clientes() {
-  const supabase = await createClient();
+  const { supabase } = await getContexto();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: clientes } = await supabase
-    .from("clients")
-    .select("*")
-    .order("name", { ascending: true });
+  const { data: clientes } = await supabase.from("clients").select("*").order("name", { ascending: true });
 
   return (
-    <main style={{ maxWidth: 1100, margin: "40px auto", padding: "0 20px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 30,
-        }}
-      >
+    <main className="wrap">
+      <div className="headrow" style={{ marginBottom: 18 }}>
         <div>
-          <h1 style={{ fontSize: 32, fontWeight: 700 }}>Clientes</h1>
-          <p style={{ color: "#666", marginTop: 8 }}>
-            Clientes vinculados aos equipamentos.
-          </p>
+          <h1 className="title">Clientes</h1>
+          <p className="muted">Clientes vinculados aos equipamentos.</p>
         </div>
-
-        <a
-          href="/clientes/novo"
-          style={{
-            background: "#1677ff",
-            color: "#fff",
-            padding: "12px 18px",
-            borderRadius: 8,
-            textDecoration: "none",
-            fontWeight: 600,
-          }}
-        >
+        <Link className="btn primary" href="/clientes/novo">
           + Novo cliente
-        </a>
+        </Link>
       </div>
 
-      <div
-        style={{
-          border: "1px solid #e5e5e5",
-          borderRadius: 12,
-          overflow: "hidden",
-          background: "#fff",
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <section className="card">
+        <table className="table">
           <thead>
-            <tr style={{ background: "#f7f7f7", textAlign: "left" }}>
-              <th style={{ padding: 14 }}>Cliente</th>
-              <th style={{ padding: 14 }}>Contato</th>
-              <th style={{ padding: 14 }}>Telefone</th>
-              <th style={{ padding: 14 }}>Cidade</th>
+            <tr>
+              <th>Cliente</th>
+              <th>Contato</th>
+              <th>Telefone</th>
+              <th>Cidade</th>
             </tr>
           </thead>
-
           <tbody>
-            {clientes?.map((cliente) => (
+            {clientes?.map((cliente: any) => (
               <tr key={cliente.id}>
-                <td style={{ padding: 14, borderTop: "1px solid #eee" }}>
-                  {cliente.name}
-                </td>
-
-                <td style={{ padding: 14, borderTop: "1px solid #eee" }}>
-                  {cliente.contact_name || "-"}
-                </td>
-
-                <td style={{ padding: 14, borderTop: "1px solid #eee" }}>
-                  {cliente.phone || "-"}
-                </td>
-
-                <td style={{ padding: 14, borderTop: "1px solid #eee" }}>
-                  {cliente.city || "-"}
-                </td>
+                <td>{cliente.name}</td>
+                <td>{cliente.contact_name || "-"}</td>
+                <td>{cliente.phone || "-"}</td>
+                <td>{cliente.city || "-"}</td>
               </tr>
             ))}
-
             {(!clientes || clientes.length === 0) && (
               <tr>
-                <td
-                  colSpan={4}
-                  style={{
-                    padding: 30,
-                    textAlign: "center",
-                    color: "#777",
-                  }}
-                >
+                <td colSpan={4} className="muted" style={{ textAlign: "center", padding: 30 }}>
                   Nenhum cliente cadastrado.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
+      </section>
     </main>
   );
 }

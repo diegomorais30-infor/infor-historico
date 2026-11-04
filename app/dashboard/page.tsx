@@ -82,7 +82,7 @@ export default async function Dashboard() {
               {((preventivas as any[]) ?? []).map((e) => (
                 <tr key={e.id}>
                   <td>
-                    <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--blue)", fontWeight: 800 }}>
+                    <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--link)", fontWeight: 800 }}>
                       {e.code}
                     </Link>
                     <div className="muted">
@@ -147,7 +147,7 @@ export default async function Dashboard() {
             {((recentes as any[]) ?? []).map((e) => (
               <tr key={e.id}>
                 <td>
-                  <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--blue)", fontWeight: 800 }}>
+                  <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--link)", fontWeight: 800 }}>
                     {e.code}
                   </Link>
                 </td>

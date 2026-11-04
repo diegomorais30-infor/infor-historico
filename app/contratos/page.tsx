@@ -68,7 +68,7 @@ export default async function Contratos() {
             {contratos.map((c) => (
               <tr key={c.id}>
                 <td>
-                  <Link href={`/contratos/${c.id}`} style={{ color: "var(--blue)", fontWeight: 800 }}>
+                  <Link href={`/contratos/${c.id}`} style={{ color: "var(--link)", fontWeight: 800 }}>
                     {c.code}
                   </Link>
                 </td>

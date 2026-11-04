@@ -134,7 +134,7 @@ export default async function Leituras({
               return (
                 <tr key={e.id}>
                   <td>
-                    <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--blue)", fontWeight: 800 }}>
+                    <Link href={`/equipamentos/${e.id}`} style={{ color: "var(--link)", fontWeight: 800 }}>
                       {e.code}
                     </Link>
                     <div className="muted">

@@ -1,10 +1,11 @@
 import "./globals.css";
+import { NOME_PRODUTO } from "@/lib/marca";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./logout-button";
 
 export const metadata = {
-  title: "Infor Histórico",
+  title: NOME_PRODUTO,
   description: "Gestão de equipamentos e manutenções",
 };
 
@@ -43,7 +44,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 <i className="c" />
                 <i className="c" />
               </span>
-              <span>Infor Histórico</span>
+              <span>{NOME_PRODUTO}</span>
             </Link>
             {user && (
               <nav className="topnav">

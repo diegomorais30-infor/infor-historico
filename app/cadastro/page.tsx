@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { NOME_PRODUTO } from "@/lib/marca";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -55,7 +56,7 @@ export default function Cadastro() {
             <i className="c" />
             <i className="c" />
           </span>
-          <span>Infor Histórico</span>
+          <span>{NOME_PRODUTO}</span>
         </div>
         <h1 className="title" style={{ marginTop: 25 }}>
           Criar conta

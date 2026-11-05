@@ -1,4 +1,4 @@
-# Infor Histórico
+# InforGest
 
 Sistema de gestão de equipamentos e manutenções (Next.js + Supabase), multiempresa.
 Uso interno da Infor Cartuchos e base para vender por mensalidade a outras empresas.

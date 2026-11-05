@@ -1,14 +1,36 @@
 import Link from "next/link";
 import { getContexto } from "@/lib/contexto";
-import { PERFIS, STATUS_EQUIPAMENTO, fmtData } from "@/lib/format";
+import { PERFIS, STATUS_EQUIPAMENTO, fmtData, hojeBR, moeda } from "@/lib/format";
 
 export default async function Dashboard() {
   const { supabase, perfil } = await getContexto();
 
+  // Datas no horário de Brasília
+  const hoje = hojeBR();
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(`${hoje}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - i);
+    return d.toISOString().slice(0, 10);
+  });
+  const inicio7 = `${dias[6]}T00:00:00-03:00`;
+  const diaSP = (ts: string) => new Date(ts).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+
   const em30dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [{ count: eqCount }, { count: clCount }, { count: mtCount }, { data: recentes }, { data: preventivas }, { data: pecas }] =
-    await Promise.all([
+  const [
+    { count: eqCount },
+    { count: clCount },
+    { count: mtCount },
+    { data: recentes },
+    { data: preventivas },
+    { data: pecas },
+    { data: chamados7 },
+    { data: abertos },
+    { data: manut7 },
+    { data: pecasUsadas },
+    { data: pagas7 },
+    { data: faturasAbertas },
+  ] = await Promise.all([
       supabase.from("equipment").select("*", { count: "exact", head: true }),
       supabase.from("clients").select("*", { count: "exact", head: true }),
       supabase.from("maintenance").select("*", { count: "exact", head: true }),
@@ -25,11 +47,36 @@ export default async function Dashboard() {
         .order("next_preventive_date")
         .limit(5),
       supabase.from("parts").select("id,name,stock_quantity,minimum_stock").eq("active", true),
+      supabase.from("service_requests").select("created_at,resolved_at").or(`created_at.gte.${inicio7},resolved_at.gte.${inicio7}`),
+      supabase.from("service_requests").select("status").in("status", ["open", "in_progress"]),
+      supabase.from("maintenance").select("service_date").gte("service_date", dias[6]),
+      supabase.from("maintenance_parts").select("quantity,created_at").gte("created_at", inicio7),
+      supabase.from("invoices").select("total,paid_at").eq("status", "paid").gte("paid_at", inicio7),
+      supabase.from("invoices").select("total,due_date").eq("status", "open"),
     ]);
 
   const empresa = (perfil as any)?.companies;
   const pecasBaixas = ((pecas as any[]) ?? []).filter((p) => Number(p.stock_quantity) <= Number(p.minimum_stock));
-  const hoje = new Date().toISOString().slice(0, 10);
+
+  // Métricas por dia (últimos 7 dias, hoje primeiro)
+  const porDia = dias.map((dia) => ({
+    dia,
+    novos: ((chamados7 as any[]) ?? []).filter((c) => c.created_at && diaSP(c.created_at) === dia).length,
+    concluidos: ((chamados7 as any[]) ?? []).filter((c) => c.resolved_at && diaSP(c.resolved_at) === dia).length,
+    manutencoes: ((manut7 as any[]) ?? []).filter((m) => m.service_date === dia).length,
+    pecas: ((pecasUsadas as any[]) ?? [])
+      .filter((x) => diaSP(x.created_at) === dia)
+      .reduce((t, x) => t + Number(x.quantity), 0),
+    recebido: ((pagas7 as any[]) ?? [])
+      .filter((f) => f.paid_at && diaSP(f.paid_at) === dia)
+      .reduce((t, f) => t + Number(f.total), 0),
+  }));
+  const h = porDia[0];
+  const emAberto = ((abertos as any[]) ?? []).length;
+  const emAtendimento = ((abertos as any[]) ?? []).filter((c) => c.status === "in_progress").length;
+  const vencidas = ((faturasAbertas as any[]) ?? []).filter((f) => f.due_date < hoje);
+  const venceHoje = ((faturasAbertas as any[]) ?? []).filter((f) => f.due_date === hoje);
+  const somaFat = (l: any[]) => l.reduce((t, f) => t + Number(f.total), 0);
 
   return (
     <main className="wrap">
@@ -45,6 +92,73 @@ export default async function Dashboard() {
         </Link>
       </div>
 
+      <h2 style={{ margin: "0 0 10px" }}>Hoje · {fmtData(hoje)}</h2>
+      <div className="grid g4">
+        <Link href="/chamados" className="card" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="muted">Chamados novos hoje</div>
+          <div className="stat">{h.novos}</div>
+        </Link>
+        <Link href="/chamados" className="card" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="muted">Chamados pendentes</div>
+          <div className="stat">{emAberto}</div>
+          <div className="muted" style={{ fontSize: 13 }}>{emAtendimento} em atendimento</div>
+        </Link>
+        <div className="card">
+          <div className="muted">Chamados concluídos hoje</div>
+          <div className="stat">{h.concluidos}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Manutenções hoje</div>
+          <div className="stat">{h.manutencoes}</div>
+          <div className="muted" style={{ fontSize: 13 }}>{h.pecas} peça(s) usada(s)</div>
+        </div>
+        <div className="card">
+          <div className="muted">Recebido hoje</div>
+          <div className="stat" style={{ fontSize: 24 }}>{moeda(h.recebido)}</div>
+        </div>
+        <Link href="/contratos" className="card" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="muted">Faturas vencem hoje</div>
+          <div className="stat">{venceHoje.length}</div>
+          <div className="muted" style={{ fontSize: 13 }}>{moeda(somaFat(venceHoje))}</div>
+        </Link>
+        <Link href="/contratos" className="card" style={{ textDecoration: "none", color: "inherit" }}>
+          <div className="muted">Faturas vencidas</div>
+          <div className="stat" style={{ color: vencidas.length ? "#ffb4b4" : undefined }}>{vencidas.length}</div>
+          <div className="muted" style={{ fontSize: 13 }}>{moeda(somaFat(vencidas))}</div>
+        </Link>
+      </div>
+
+      <section className="card" style={{ marginTop: 18 }}>
+        <h2>Últimos 7 dias</h2>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Chamados novos</th>
+              <th>Concluídos</th>
+              <th>Manutenções</th>
+              <th>Peças</th>
+              <th>Recebido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {porDia.map((d, i) => (
+              <tr key={d.dia}>
+                <td>
+                  {fmtData(d.dia)} {i === 0 && <span className="badge">hoje</span>}
+                </td>
+                <td>{d.novos}</td>
+                <td>{d.concluidos}</td>
+                <td>{d.manutencoes}</td>
+                <td>{d.pecas}</td>
+                <td>{moeda(d.recebido)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <h2 style={{ margin: "22px 0 10px" }}>Visão geral</h2>
       <div className="grid g4">
         <div className="card">
           <div className="muted">Equipamentos</div>

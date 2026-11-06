@@ -85,6 +85,17 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
     .select("id, email, role, accepted_at, created_at")
     .order("created_at", { ascending: false });
 
+  // Convite por WhatsApp: abre o WhatsApp com a mensagem pronta; você escolhe o contato.
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || "https://inforgest.com.br").replace(/\/$/, "");
+  const nomeEmpresa = (perfil as any)?.companies?.name ?? "nossa empresa";
+  const linkWhatsapp = (email: string, role: string) => {
+    const texto =
+      `Olá! Você foi convidado para o InforGest da ${nomeEmpresa} como ${PERFIS[role] ?? role}.\n\n` +
+      `1) Abra ${site}/cadastro\n` +
+      `2) Crie sua conta usando exatamente este e-mail: ${email}`;
+    return `https://wa.me/?text=${encodeURIComponent(texto)}`;
+  };
+
   return (
     <main className="wrap">
       <h1 className="title">Usuários</h1>
@@ -197,6 +208,7 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
               <th>Perfil</th>
               <th>Enviado em</th>
               <th>Situação</th>
+              <th>Enviar</th>
             </tr>
           </thead>
           <tbody>
@@ -206,11 +218,18 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
                 <td>{PERFIS[c.role]}</td>
                 <td>{fmtData(c.created_at)}</td>
                 <td>{c.accepted_at ? "Aceito" : "Aguardando"}</td>
+                <td>
+                  {!c.accepted_at && (
+                    <a className="link" href={linkWhatsapp(c.email, c.role)} target="_blank" rel="noopener noreferrer">
+                      WhatsApp
+                    </a>
+                  )}
+                </td>
               </tr>
             ))}
             {!(convites ?? []).length && (
               <tr>
-                <td colSpan={4} className="muted">
+                <td colSpan={5} className="muted">
                   Nenhum convite enviado.
                 </td>
               </tr>

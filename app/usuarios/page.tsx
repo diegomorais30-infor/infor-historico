@@ -20,8 +20,35 @@ async function convidar(formData: FormData) {
   // company_id e a permissão de admin são conferidos pelo banco
   const { error } = await supabase.from("company_invites").insert({ email, role, created_by: user.id });
   if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
+
+  // E-mail do convite (só se o Resend estiver configurado); falha no envio não desfaz o convite
+  let aviso = "";
+  const chave = process.env.RESEND_API_KEY;
+  if (chave) {
+    const { data: p } = await supabase.from("profiles").select("companies(name)").eq("id", user.id).single();
+    const empresa = (p as any)?.companies?.name ?? "sua empresa";
+    const site = (process.env.NEXT_PUBLIC_SITE_URL || "https://inforgest.com.br").replace(/\/$/, "");
+    const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+    try {
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM || "InforGest <convites@inforgest.com.br>",
+          to: [email],
+          subject: `Convite para o InforGest — ${empresa}`,
+          html:
+            `<p>Olá! Você foi convidado para o InforGest da <b>${esc(empresa)}</b>.</p>` +
+            `<p>1) Abra <a href="${site}/cadastro">${site}/cadastro</a><br>2) Crie sua conta usando exatamente este e-mail: <b>${esc(email)}</b></p>`,
+        }),
+      });
+      aviso = r.ok ? "ok" : "falha";
+    } catch {
+      aviso = "falha";
+    }
+  }
   revalidatePath("/usuarios");
-  redirect("/usuarios");
+  redirect("/usuarios" + (aviso ? `?email=${aviso}` : ""));
 }
 
 async function atualizarMeuNome(formData: FormData) {
@@ -91,8 +118,8 @@ async function alternarAtivo(formData: FormData) {
   redirect("/usuarios");
 }
 
-export default async function Usuarios({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
-  const { erro } = await searchParams;
+export default async function Usuarios({ searchParams }: { searchParams: Promise<{ erro?: string; email?: string }> }) {
+  const { erro, email: statusEmail } = await searchParams;
   const { supabase, user, perfil } = await getContexto();
   if (perfil?.role !== "admin") redirect("/dashboard");
 
@@ -118,6 +145,12 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
       <h1 className="title">Usuários</h1>
       <p className="muted">Convide sua equipe. Cada pessoa cria a conta em /cadastro usando o e-mail convidado.</p>
 
+      {statusEmail === "ok" && <div className="card" style={{ margin: "14px 0" }}>Convite enviado por e-mail.</div>}
+      {statusEmail === "falha" && (
+        <div className="error" style={{ margin: "14px 0" }}>
+          Convite criado, mas o e-mail não saiu. Use o botão "Enviar por WhatsApp" abaixo.
+        </div>
+      )}
       {erro && (
         <div className="error" style={{ margin: "14px 0" }}>
           {erro}

@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Logo } from "@/components/logo";
 import { NOME_PRODUTO } from "@/lib/marca";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -39,12 +40,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <header className="top">
           <div className="wrap topbar">
             <Link href={user ? "/dashboard" : "/login"} className="brand">
-              <span className="circles">
-                <i className="c" />
-                <i className="c" />
-                <i className="c" />
-              </span>
-              <span>{NOME_PRODUTO}</span>
+              <Logo />
             </Link>
             {user && (
               <nav className="topnav">

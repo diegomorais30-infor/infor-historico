@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { NOME_PRODUTO } from "@/lib/marca";
+import { Logo } from "@/components/logo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -51,12 +51,7 @@ export default function Cadastro() {
     <main className="login">
       <div className="card">
         <div className="brand">
-          <span className="circles">
-            <i className="c" />
-            <i className="c" />
-            <i className="c" />
-          </span>
-          <span>{NOME_PRODUTO}</span>
+          <Logo />
         </div>
         <h1 className="title" style={{ marginTop: 25 }}>
           Criar conta

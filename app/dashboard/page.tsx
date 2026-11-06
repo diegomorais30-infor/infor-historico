@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AvisosPush from "@/components/avisos-push";
 import { getContexto } from "@/lib/contexto";
 import { PERFIS, STATUS_EQUIPAMENTO, fmtData, hojeBR, moeda } from "@/lib/format";
 
@@ -87,10 +88,17 @@ export default async function Dashboard() {
             {perfil?.full_name ? `Olá, ${perfil.full_name}.` : "Bem-vindo."} Perfil: {PERFIS[perfil?.role ?? ""] ?? "—"}
           </p>
         </div>
-        <Link className="btn primary" href="/equipamentos/novo">
-          + Novo equipamento
-        </Link>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link className="btn secondary" href="/ler-qr">
+            Ler QR Code
+          </Link>
+          <Link className="btn primary" href="/equipamentos/novo">
+            + Novo equipamento
+          </Link>
+        </div>
       </div>
+
+      <AvisosPush />
 
       <h2 style={{ margin: "0 0 10px" }}>Hoje · {fmtData(hoje)}</h2>
       <div className="grid g4">

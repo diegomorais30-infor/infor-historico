@@ -51,6 +51,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 <Link href="/dashboard">Início</Link>
                 <Link href="/chamados">Chamados{abertos > 0 ? ` (${abertos})` : ""}</Link>
                 <Link href="/equipamentos">Equipamentos</Link>
+                <Link href="/ler-qr">Ler QR</Link>
                 <Link href="/clientes">Clientes</Link>
                 <Link href="/contratos">Contratos</Link>
                 <Link href="/leituras">Leituras</Link>

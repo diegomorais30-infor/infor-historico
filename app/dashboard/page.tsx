@@ -56,6 +56,7 @@ export default async function Dashboard() {
       supabase.from("invoices").select("total,due_date").eq("status", "open"),
     ]);
 
+  const gerente = (perfil as any)?.role === "admin" || (perfil as any)?.role === "manager";
   const empresa = (perfil as any)?.companies;
   const pecasBaixas = ((pecas as any[]) ?? []).filter((p) => Number(p.stock_quantity) <= Number(p.minimum_stock));
 
@@ -120,6 +121,7 @@ export default async function Dashboard() {
           <div className="stat">{h.manutencoes}</div>
           <div className="muted" style={{ fontSize: 13 }}>{h.pecas} peça(s) usada(s)</div>
         </div>
+        {gerente && (<>
         <div className="card">
           <div className="muted">Recebido hoje</div>
           <div className="stat" style={{ fontSize: 24 }}>{moeda(h.recebido)}</div>
@@ -134,6 +136,7 @@ export default async function Dashboard() {
           <div className="stat" style={{ color: vencidas.length ? "#ffb4b4" : undefined }}>{vencidas.length}</div>
           <div className="muted" style={{ fontSize: 13 }}>{moeda(somaFat(vencidas))}</div>
         </Link>
+        </>)}
       </div>
 
       <section className="card" style={{ marginTop: 18 }}>

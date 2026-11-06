@@ -53,7 +53,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 <Link href="/equipamentos">Equipamentos</Link>
                 <Link href="/ler-qr">Ler QR</Link>
                 <Link href="/clientes">Clientes</Link>
-                <Link href="/contratos">Contratos</Link>
+                {(papel === "admin" || papel === "manager") && <Link href="/contratos">Contratos</Link>}
                 <Link href="/leituras">Leituras</Link>
                 <Link href="/pecas">Peças</Link>
                 {papel === "admin" && <Link href="/usuarios">Usuários</Link>}

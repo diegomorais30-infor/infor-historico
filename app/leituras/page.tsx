@@ -143,7 +143,7 @@ export default async function Leituras({
                   </td>
                   <td>
                     {e.clients?.name ?? "—"}
-                    <div className="muted">{e.contracts?.code ?? "sem contrato"}</div>
+                    <div className="muted">{e.contracts?.code ?? (e.contract_id ? "em contrato" : "sem contrato")}</div>
                   </td>
                   <td>
                     {ant ? (

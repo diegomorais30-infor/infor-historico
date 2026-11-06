@@ -208,28 +208,29 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
               <th>Perfil</th>
               <th>Enviado em</th>
               <th>Situação</th>
-              <th>Enviar</th>
             </tr>
           </thead>
           <tbody>
             {(convites ?? []).map((c: any) => (
               <tr key={c.id}>
-                <td>{c.email}</td>
+                <td>
+                  {c.email}
+                  {!c.accepted_at && (
+                    <div style={{ marginTop: 6 }}>
+                      <a className="btn secondary" href={linkWhatsapp(c.email, c.role)} target="_blank" rel="noopener noreferrer">
+                        Enviar por WhatsApp
+                      </a>
+                    </div>
+                  )}
+                </td>
                 <td>{PERFIS[c.role]}</td>
                 <td>{fmtData(c.created_at)}</td>
                 <td>{c.accepted_at ? "Aceito" : "Aguardando"}</td>
-                <td>
-                  {!c.accepted_at && (
-                    <a className="link" href={linkWhatsapp(c.email, c.role)} target="_blank" rel="noopener noreferrer">
-                      WhatsApp
-                    </a>
-                  )}
-                </td>
               </tr>
             ))}
             {!(convites ?? []).length && (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={4} className="muted">
                   Nenhum convite enviado.
                 </td>
               </tr>

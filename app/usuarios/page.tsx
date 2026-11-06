@@ -24,6 +24,23 @@ async function convidar(formData: FormData) {
   redirect("/usuarios");
 }
 
+async function atualizarMeuNome(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const nome = String(formData.get("full_name") || "").trim().replace(/\s+/g, " ");
+  if (nome.length < 2 || nome.length > 80) redirect("/usuarios?erro=" + encodeURIComponent("Informe seu nome completo."));
+
+  const { error } = await supabase.from("profiles").update({ full_name: nome }).eq("id", user.id);
+  if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
+  revalidatePath("/", "layout");
+  redirect("/usuarios");
+}
+
 async function atualizarEmpresa(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -106,6 +123,14 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
           {erro}
         </div>
       )}
+
+      <form action={atualizarMeuNome} className="card" style={{ margin: "18px 0", display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap" }}>
+        <label className="field" style={{ flex: "1 1 240px" }}>
+          Seu nome
+          <input name="full_name" required minLength={2} maxLength={80} defaultValue={perfil?.full_name ?? ""} />
+        </label>
+        <button className="btn primary">Salvar meu nome</button>
+      </form>
 
       <form action={atualizarEmpresa} className="card grid g4" style={{ margin: "18px 0" }}>
         <label className="field" style={{ gridColumn: "span 2" }}>

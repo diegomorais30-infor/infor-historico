@@ -4,8 +4,12 @@ import { NOME_PRODUTO } from "@/lib/marca";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./logout-button";
+import InstalarApp from "@/components/instalar-app";
+
+export const viewport = { themeColor: "#0a1a33" };
 
 export const metadata = {
+  appleWebApp: { capable: true, title: NOME_PRODUTO, statusBarStyle: "black-translucent" as const },
   title: NOME_PRODUTO,
   description: "Gestão de equipamentos e manutenções",
 };
@@ -61,6 +65,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           </div>
         </header>
         {children}
+        {user && <InstalarApp />}
       </body>
     </html>
   );

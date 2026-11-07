@@ -53,6 +53,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               <nav className="topnav">
                 <Link href="/dashboard">Início</Link>
                 {podeVer(papel, perms, "chamados") && <Link href="/chamados">Chamados{abertos > 0 ? ` (${abertos})` : ""}</Link>}
+                {podeVer(papel, perms, "os") && <Link href="/os">OS</Link>}
                 {podeVer(papel, perms, "equipamentos") && <Link href="/equipamentos">Equipamentos</Link>}
                 {podeVer(papel, perms, "equipamentos") && <Link href="/ler-qr">Ler QR</Link>}
                 {podeVer(papel, perms, "clientes") && <Link href="/clientes">Clientes</Link>}

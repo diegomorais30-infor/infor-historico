@@ -2,6 +2,7 @@
 // que é quem realmente decide (aqui só escondemos menus e botões).
 export const AREAS: { chave: string; nome: string; href: string }[] = [
   { chave: "chamados", nome: "Chamados", href: "/chamados" },
+  { chave: "os", nome: "Ordens de serviço", href: "/os" },
   { chave: "equipamentos", nome: "Equipamentos e manutenções", href: "/equipamentos" },
   { chave: "clientes", nome: "Clientes", href: "/clientes" },
   { chave: "pecas", nome: "Peças e estoque", href: "/pecas" },

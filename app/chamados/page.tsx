@@ -135,6 +135,9 @@ export default async function Chamados({
                         </form>
                       )}
                       {(c.status === "open" || c.status === "in_progress") && eq && (
+                        <Link className="btn secondary" href={`/os/nova?chamado=${c.id}`}>
+                          Gerar OS
+                        </Link>
                         <Link className="btn secondary" href={`/equipamentos/${eq.id}/manutencao/nova`}>
                           Registrar manutenção
                         </Link>

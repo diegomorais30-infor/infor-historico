@@ -42,6 +42,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Conta criada pelo administrador: obriga a trocar a senha provisória no primeiro acesso
+  if (user && (user.user_metadata as any)?.must_change_password && path !== "/trocar-senha" && !path.startsWith("/api/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/trocar-senha";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   if (user && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";

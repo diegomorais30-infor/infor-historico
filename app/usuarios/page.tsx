@@ -3,6 +3,9 @@ import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
 import { PERFIS, fmtData } from "@/lib/format";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { lerPermissoes } from "@/lib/permissoes";
+import PermissoesCampos from "@/components/permissoes-campos";
 
 async function convidar(formData: FormData) {
   "use server";
@@ -18,7 +21,7 @@ async function convidar(formData: FormData) {
   if (!["admin", "manager", "technician"].includes(role)) redirect("/usuarios?erro=Perfil%20inv%C3%A1lido");
 
   // company_id e a permissão de admin são conferidos pelo banco
-  const { error } = await supabase.from("company_invites").insert({ email, role, created_by: user.id });
+  const { error } = await supabase.from("company_invites").insert({ email, role, permissions: lerPermissoes(formData), created_by: user.id });
   if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
 
   // E-mail do convite (só se o Resend estiver configurado); falha no envio não desfaz o convite
@@ -119,7 +122,7 @@ async function alterarConvite(formData: FormData) {
   const id = String(formData.get("id"));
   const role = String(formData.get("role"));
   if (!["admin", "manager", "technician"].includes(role)) redirect("/usuarios?erro=Perfil%20inv%C3%A1lido");
-  const { error } = await supabase.from("company_invites").update({ role }).eq("id", id).is("accepted_at", null);
+  const { error } = await supabase.from("company_invites").update({ role, permissions: lerPermissoes(formData) }).eq("id", id).is("accepted_at", null);
   if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
   revalidatePath("/usuarios");
   redirect("/usuarios");
@@ -135,6 +138,63 @@ async function cancelarConvite(formData: FormData) {
   redirect("/usuarios");
 }
 
+async function atualizarPermissoes(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const { error } = await supabase.from("profiles").update({ permissions: lerPermissoes(formData) }).eq("id", id);
+  if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
+  revalidatePath("/usuarios");
+  redirect("/usuarios?ok=" + encodeURIComponent("Permissões salvas."));
+}
+
+async function criarConta(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const nome = String(formData.get("full_name") || "").trim().replace(/\s+/g, " ");
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const senha = String(formData.get("senha") || "");
+  const role = String(formData.get("role") || "technician");
+  const falha = (m: string) => redirect("/usuarios?erro=" + encodeURIComponent(m));
+  if (nome.length < 2) falha("Informe o nome da pessoa.");
+  if (!email.includes("@")) falha("Informe um e-mail válido.");
+  if (senha.length < 8) falha("A senha provisória precisa ter pelo menos 8 caracteres.");
+  if (!["admin", "manager", "technician"].includes(role)) falha("Perfil inválido.");
+
+  // Convite (confere que quem pede é administrador, pelas regras do banco) e depois a conta
+  const { data: convite, error: e1 } = await supabase
+    .from("company_invites")
+    .insert({ email, role, permissions: lerPermissoes(formData), created_by: user.id })
+    .select("id")
+    .single();
+  if (e1 || !convite) falha(e1?.message ?? "Não foi possível criar o convite.");
+
+  let erroConta = "";
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.createUser({
+      email,
+      password: senha,
+      email_confirm: true,
+      user_metadata: { full_name: nome, must_change_password: true },
+    });
+    if (error) erroConta = error.message;
+  } catch (e) {
+    erroConta = String((e as Error)?.message ?? e);
+  }
+  if (erroConta) {
+    await supabase.from("company_invites").delete().eq("id", convite!.id).is("accepted_at", null);
+    falha("Não foi possível criar a conta: " + erroConta);
+  }
+  revalidatePath("/usuarios");
+  redirect("/usuarios?ok=" + encodeURIComponent(`Conta criada para ${email}. Passe a senha provisória a ela; no primeiro acesso será pedida uma senha nova.`));
+}
+
 async function alternarAtivo(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -146,15 +206,15 @@ async function alternarAtivo(formData: FormData) {
   redirect("/usuarios");
 }
 
-export default async function Usuarios({ searchParams }: { searchParams: Promise<{ erro?: string; email?: string }> }) {
-  const { erro, email: statusEmail } = await searchParams;
+export default async function Usuarios({ searchParams }: { searchParams: Promise<{ erro?: string; ok?: string; email?: string }> }) {
+  const { erro, ok, email: statusEmail } = await searchParams;
   const { supabase, user, perfil } = await getContexto();
   if (perfil?.role !== "admin") redirect("/dashboard");
 
-  const { data: perfis } = await supabase.from("profiles").select("id, full_name, role, active").order("full_name");
+  const { data: perfis } = await supabase.from("profiles").select("id, full_name, role, active, permissions").order("full_name");
   const { data: convites } = await supabase
     .from("company_invites")
-    .select("id, email, role, accepted_at, created_at")
+    .select("id, email, role, permissions, accepted_at, created_at")
     .order("created_at", { ascending: false });
 
   // Convite por WhatsApp: abre o WhatsApp com a mensagem pronta; você escolhe o contato.
@@ -179,6 +239,7 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
           Convite criado, mas o e-mail não saiu. Use o botão "Enviar por WhatsApp" abaixo.{statusEmail.length > 5 && <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>Detalhe: {statusEmail.slice(6)}</div>}
         </div>
       )}
+      {ok && <div className="card" style={{ margin: "14px 0" }}>{ok}</div>}
       {erro && (
         <div className="error" style={{ margin: "14px 0" }}>
           {erro}
@@ -233,6 +294,50 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
         <div style={{ alignSelf: "end" }}>
           <button className="btn primary">Enviar convite</button>
         </div>
+        <details style={{ gridColumn: "1/-1" }}>
+          <summary className="muted">Permissões por área (opcional)</summary>
+          <div style={{ marginTop: 10 }}>
+            <PermissoesCampos />
+          </div>
+        </details>
+      </form>
+
+      <form action={criarConta} className="card grid g4" style={{ margin: "18px 0" }}>
+        <h2 style={{ gridColumn: "1/-1", margin: 0 }}>Criar conta com senha provisória</h2>
+        <p className="muted" style={{ gridColumn: "1/-1", margin: 0, fontSize: 13 }}>
+          A conta já fica pronta. Você passa a senha provisória à pessoa e, no primeiro acesso, o sistema pede uma senha nova.
+        </p>
+        <label className="field">
+          Nome
+          <input name="full_name" required minLength={2} maxLength={80} />
+        </label>
+        <label className="field">
+          E-mail
+          <input name="email" type="email" required />
+        </label>
+        <label className="field">
+          Senha provisória
+          <input name="senha" type="text" required minLength={8} autoComplete="off" />
+        </label>
+        <label className="field">
+          Perfil
+          <select name="role" defaultValue="technician">
+            {Object.entries(PERFIS).map(([valor, nome]) => (
+              <option key={valor} value={valor}>
+                {nome}
+              </option>
+            ))}
+          </select>
+        </label>
+        <details style={{ gridColumn: "1/-1" }}>
+          <summary className="muted">Permissões por área (opcional)</summary>
+          <div style={{ marginTop: 10 }}>
+            <PermissoesCampos />
+          </div>
+        </details>
+        <div style={{ gridColumn: "1/-1" }}>
+          <button className="btn primary">Criar conta</button>
+        </div>
       </form>
 
       <section className="card">
@@ -265,6 +370,16 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
                       </select>
                       <button className="btn secondary">Salvar</button>
                     </form>
+                  )}
+                  {p.role !== "admin" && (
+                    <details style={{ marginTop: 8 }}>
+                      <summary className="muted">Permissões</summary>
+                      <form action={atualizarPermissoes} style={{ marginTop: 8 }}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <PermissoesCampos atuais={p.permissions} />
+                        <button className="btn secondary" style={{ marginTop: 8 }}>Salvar permissões</button>
+                      </form>
+                    </details>
                   )}
                 </td>
                 <td>
@@ -322,7 +437,13 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
                           </option>
                         ))}
                       </select>
-                      <button className="btn secondary">Salvar</button>
+                      <details style={{ marginTop: 8 }}>
+                        <summary className="muted">Permissões</summary>
+                        <div style={{ marginTop: 8 }}>
+                          <PermissoesCampos atuais={c.permissions} />
+                        </div>
+                      </details>
+                      <button className="btn secondary" style={{ marginTop: 8 }}>Salvar</button>
                     </form>
                   )}
                 </td>

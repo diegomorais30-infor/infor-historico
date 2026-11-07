@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./logout-button";
 import InstalarApp from "@/components/instalar-app";
+import { podeVer } from "@/lib/permissoes";
 
 export const viewport = { themeColor: "#0a1a33" };
 
@@ -22,6 +23,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   let empresa = "";
   let papel = "";
+  let perms: any = {};
   let abertos = 0;
   if (user) {
     const { count } = await supabase
@@ -31,11 +33,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     abertos = count ?? 0;
     const { data } = await supabase
       .from("profiles")
-      .select("role, companies(name)")
+      .select("role, permissions, companies(name)")
       .eq("id", user.id)
       .single();
     empresa = (data as any)?.companies?.name ?? "";
     papel = (data as any)?.role ?? "";
+    perms = (data as any)?.permissions ?? {};
   }
 
   return (
@@ -49,13 +52,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             {user && (
               <nav className="topnav">
                 <Link href="/dashboard">Início</Link>
-                <Link href="/chamados">Chamados{abertos > 0 ? ` (${abertos})` : ""}</Link>
-                <Link href="/equipamentos">Equipamentos</Link>
-                <Link href="/ler-qr">Ler QR</Link>
-                <Link href="/clientes">Clientes</Link>
-                {(papel === "admin" || papel === "manager") && <Link href="/contratos">Contratos</Link>}
-                <Link href="/leituras">Leituras</Link>
-                <Link href="/pecas">Peças</Link>
+                {podeVer(papel, perms, "chamados") && <Link href="/chamados">Chamados{abertos > 0 ? ` (${abertos})` : ""}</Link>}
+                {podeVer(papel, perms, "equipamentos") && <Link href="/equipamentos">Equipamentos</Link>}
+                {podeVer(papel, perms, "equipamentos") && <Link href="/ler-qr">Ler QR</Link>}
+                {podeVer(papel, perms, "clientes") && <Link href="/clientes">Clientes</Link>}
+                {podeVer(papel, perms, "contratos") && <Link href="/contratos">Contratos</Link>}
+                {podeVer(papel, perms, "leituras") && <Link href="/leituras">Leituras</Link>}
+                {podeVer(papel, perms, "pecas") && <Link href="/pecas">Peças</Link>}
                 {papel === "admin" && <Link href="/usuarios">Usuários</Link>}
               </nav>
             )}

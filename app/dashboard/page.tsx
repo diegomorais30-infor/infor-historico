@@ -1,3 +1,4 @@
+import { podeVer } from "@/lib/permissoes";
 import Link from "next/link";
 import AvisosPush from "@/components/avisos-push";
 import { getContexto } from "@/lib/contexto";
@@ -56,7 +57,7 @@ export default async function Dashboard() {
       supabase.from("invoices").select("total,due_date").eq("status", "open"),
     ]);
 
-  const gerente = (perfil as any)?.role === "admin" || (perfil as any)?.role === "manager";
+  const gerente = podeVer((perfil as any)?.role, (perfil as any)?.permissions, "contratos");
   const empresa = (perfil as any)?.companies;
   const pecasBaixas = ((pecas as any[]) ?? []).filter((p) => Number(p.stock_quantity) <= Number(p.minimum_stock));
 

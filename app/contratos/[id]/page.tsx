@@ -1,3 +1,4 @@
+import { podeEditar } from "@/lib/permissoes";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -91,7 +92,7 @@ export default async function DetalheContrato({
   const { id } = await params;
   const { erro, aviso } = await searchParams;
   const { supabase, perfil } = await getContexto();
-  const gerente = perfil?.role === "admin" || perfil?.role === "manager";
+  const gerente = podeEditar(perfil?.role, (perfil as any)?.permissions, "contratos");
 
   const { data: c } = await supabase.from("contracts").select("*, clients(name)").eq("id", id).single();
   if (!c) notFound();

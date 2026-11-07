@@ -1,3 +1,4 @@
+import { podeEditar } from "@/lib/permissoes";
 import Link from "next/link";
 import { getContexto } from "@/lib/contexto";
 import { STATUS_CONTRATO, fmtData, hojeBR, moeda } from "@/lib/format";
@@ -16,7 +17,7 @@ export default async function Contratos() {
   const receita = ativos.reduce((soma, c) => soma + Number(c.monthly_fee), 0);
   const vencendo = ativos.filter((c) => c.end_date && c.end_date <= em90).length;
   const reajuste = ativos.filter((c) => c.next_adjustment_date && c.next_adjustment_date <= hoje).length;
-  const gerente = perfil?.role === "admin" || perfil?.role === "manager";
+  const gerente = podeEditar(perfil?.role, (perfil as any)?.permissions, "contratos");
 
   return (
     <main className="wrap">

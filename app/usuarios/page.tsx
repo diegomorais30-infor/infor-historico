@@ -113,6 +113,28 @@ async function alterarPerfil(formData: FormData) {
   redirect("/usuarios");
 }
 
+async function alterarConvite(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const role = String(formData.get("role"));
+  if (!["admin", "manager", "technician"].includes(role)) redirect("/usuarios?erro=Perfil%20inv%C3%A1lido");
+  const { error } = await supabase.from("company_invites").update({ role }).eq("id", id).is("accepted_at", null);
+  if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
+  revalidatePath("/usuarios");
+  redirect("/usuarios");
+}
+
+async function cancelarConvite(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const { error } = await supabase.from("company_invites").delete().eq("id", id).is("accepted_at", null);
+  if (error) redirect("/usuarios?erro=" + encodeURIComponent(error.message));
+  revalidatePath("/usuarios");
+  redirect("/usuarios");
+}
+
 async function alternarAtivo(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -287,9 +309,37 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
                     </div>
                   )}
                 </td>
-                <td>{PERFIS[c.role]}</td>
+                <td>
+                  {c.accepted_at ? (
+                    PERFIS[c.role]
+                  ) : (
+                    <form action={alterarConvite} className="inline">
+                      <input type="hidden" name="id" value={c.id} />
+                      <select name="role" defaultValue={c.role}>
+                        {Object.entries(PERFIS).map(([valor, nome]) => (
+                          <option key={valor} value={valor}>
+                            {nome}
+                          </option>
+                        ))}
+                      </select>
+                      <button className="btn secondary">Salvar</button>
+                    </form>
+                  )}
+                </td>
                 <td>{fmtData(c.created_at)}</td>
-                <td>{c.accepted_at ? "Aceito" : "Aguardando"}</td>
+                <td>
+                  {c.accepted_at ? (
+                    "Aceito"
+                  ) : (
+                    <>
+                      <div>Aguardando</div>
+                      <form action={cancelarConvite} style={{ marginTop: 6 }}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <button className="btn secondary">Cancelar convite</button>
+                      </form>
+                    </>
+                  )}
+                </td>
               </tr>
             ))}
             {!(convites ?? []).length && (

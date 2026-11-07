@@ -252,7 +252,7 @@ export default async function Dashboard() {
               )}
             </tbody>
           </table>
-          <Link href="/pecas" className="muted">
+          <Link href="/estoque" className="muted">
             Ver todas as peças →
           </Link>
         </section>

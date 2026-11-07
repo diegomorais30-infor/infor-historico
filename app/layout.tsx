@@ -59,7 +59,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 {podeVer(papel, perms, "clientes") && <Link href="/clientes">Clientes</Link>}
                 {podeVer(papel, perms, "contratos") && <Link href="/contratos">Contratos</Link>}
                 {podeVer(papel, perms, "leituras") && <Link href="/leituras">Leituras</Link>}
-                {podeVer(papel, perms, "pecas") && <Link href="/pecas">Peças</Link>}
+                {podeVer(papel, perms, "pecas") && <Link href="/estoque">Estoque</Link>}
                 {papel === "admin" && <Link href="/usuarios">Usuários</Link>}
               </nav>
             )}

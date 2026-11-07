@@ -5,7 +5,7 @@ export const AREAS: { chave: string; nome: string; href: string }[] = [
   { chave: "os", nome: "Ordens de serviço", href: "/os" },
   { chave: "equipamentos", nome: "Equipamentos e manutenções", href: "/equipamentos" },
   { chave: "clientes", nome: "Clientes", href: "/clientes" },
-  { chave: "pecas", nome: "Peças e estoque", href: "/pecas" },
+  { chave: "pecas", nome: "Estoque", href: "/estoque" },
   { chave: "leituras", nome: "Leituras", href: "/leituras" },
   { chave: "contratos", nome: "Contratos e faturas", href: "/contratos" },
 ];

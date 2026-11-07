@@ -42,13 +42,19 @@ async function convidar(formData: FormData) {
             `<p>1) Abra <a href="${site}/cadastro">${site}/cadastro</a><br>2) Crie sua conta usando exatamente este e-mail: <b>${esc(email)}</b></p>`,
         }),
       });
-      aviso = r.ok ? "ok" : "falha";
-    } catch {
-      aviso = "falha";
+      if (r.ok) aviso = "ok";
+      else {
+        const corpo = await r.text();
+        console.error("Resend falhou", r.status, corpo);
+        aviso = "falha:" + r.status + " " + corpo.slice(0, 180);
+      }
+    } catch (e) {
+      console.error("Resend erro", e);
+      aviso = "falha:" + String((e as Error)?.message ?? e).slice(0, 180);
     }
   }
   revalidatePath("/usuarios");
-  redirect("/usuarios" + (aviso ? `?email=${aviso}` : ""));
+  redirect("/usuarios" + (aviso ? `?email=${encodeURIComponent(aviso)}` : ""));
 }
 
 async function atualizarMeuNome(formData: FormData) {
@@ -146,9 +152,9 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
       <p className="muted">Convide sua equipe. Cada pessoa cria a conta em /cadastro usando o e-mail convidado.</p>
 
       {statusEmail === "ok" && <div className="card" style={{ margin: "14px 0" }}>Convite enviado por e-mail.</div>}
-      {statusEmail === "falha" && (
+      {statusEmail?.startsWith("falha") && (
         <div className="error" style={{ margin: "14px 0" }}>
-          Convite criado, mas o e-mail não saiu. Use o botão "Enviar por WhatsApp" abaixo.
+          Convite criado, mas o e-mail não saiu. Use o botão "Enviar por WhatsApp" abaixo.{statusEmail.length > 5 && <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>Detalhe: {statusEmail.slice(6)}</div>}
         </div>
       )}
       {erro && (

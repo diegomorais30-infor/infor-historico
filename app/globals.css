@@ -26,6 +26,7 @@ h1,h2,h3{color:var(--ink)}
 .grid{display:grid;gap:14px}
 .g4{grid-template-columns:repeat(4,1fr)}
 .g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 2px 12px #00000040}
 .stat{font-size:30px;font-weight:800;margin-top:8px}
 .muted{color:var(--muted)}
@@ -61,8 +62,8 @@ form.inline input[type=number]{width:90px}
 .filesrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
 .thumb{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .link{color:var(--link);font-weight:700}
-@media(max-width:800px){.g4,.g2{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.g4,.g2{grid-template-columns:1fr}.wrap{padding:14px}.title{font-size:24px}.table{display:block;overflow-x:auto}.partrow{grid-template-columns:1fr}}
+@media(max-width:800px){.g4,.g3,.g2{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.g4,.g3,.g2{grid-template-columns:1fr}.wrap{padding:14px}.title{font-size:24px}.table{display:block;overflow-x:auto}.partrow{grid-template-columns:1fr}}
 
 /* Impressão (etiquetas, OS): fundo branco e texto preto, sem menus */
 @media print{

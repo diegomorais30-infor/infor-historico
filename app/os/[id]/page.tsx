@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
 import { fmtData } from "@/lib/format";
-import { COR_STATUS_OS, PRIORIDADE_OS, SITUACOES_OS, STATUS_OS } from "@/lib/os";
+import { COR_STATUS_OS, FLUXO_OS, PRIORIDADE_OS, progressoOS, RESPONSAVEL_ETAPA, SITUACOES_OS, STATUS_OS } from "@/lib/os";
 import { podeEditar } from "@/lib/permissoes";
 
 async function salvar(formData: FormData) {
@@ -19,6 +19,7 @@ async function salvar(formData: FormData) {
     .update({
       status,
       priority,
+      warranty: formData.get("warranty") === "on",
       situacao: texto("situacao"),
       deadline: texto("deadline"),
       technician_id: texto("technician_id"),
@@ -90,6 +91,10 @@ export default async function DetalheOS({
     supabase.from("parts").select("id, name, code").eq("active", true).order("name"),
   ]);
 
+  const atendente = (equipe ?? []).find((p: any) => p.id === o.created_by)?.full_name;
+  const progresso = progressoOS(o.status);
+  const idxAtual = FLUXO_OS.indexOf(o.status);
+
   return (
     <main className="wrap">
       <div className="headrow" style={{ marginBottom: 12 }}>
@@ -110,6 +115,38 @@ export default async function DetalheOS({
           </Link>
         </div>
       </div>
+
+      {o.status !== "cancelado" && (
+        <section className="card" style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {FLUXO_OS.map((e, i) => (
+              <div
+                key={e}
+                title={RESPONSAVEL_ETAPA[e]}
+                style={{
+                  flex: "1 1 80px",
+                  textAlign: "center",
+                  padding: "6px 4px",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  background: i <= idxAtual ? COR_STATUS_OS[o.status] : "transparent",
+                  border: "1px solid var(--line, #3a4a5c)",
+                  color: i <= idxAtual ? "#fff" : "inherit",
+                  opacity: i <= idxAtual ? 1 : 0.6,
+                }}
+              >
+                {STATUS_OS[e]}
+                <div style={{ fontSize: 10, fontWeight: 400 }}>{RESPONSAVEL_ETAPA[e]}</div>
+              </div>
+            ))}
+          </div>
+          <div className="muted" style={{ marginTop: 8 }}>
+            Progresso: {progresso}%{atendente && <> · Atendente: {atendente}</>}
+            {o.warranty && <> · <b>Em garantia</b></>}
+          </div>
+        </section>
+      )}
 
       {erro && <div className="error" style={{ margin: "10px 0" }}>{erro}</div>}
       {ok && <div className="card" style={{ margin: "10px 0" }}>Salvo.</div>}
@@ -152,6 +189,10 @@ export default async function DetalheOS({
               <option key={s} value={s} />
             ))}
           </datalist>
+        </label>
+        <label className="field" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <input name="warranty" type="checkbox" defaultChecked={o.warranty} disabled={!editar} style={{ width: "auto" }} />
+          Atendimento em garantia
         </label>
         <label className="field">
           Prioridade

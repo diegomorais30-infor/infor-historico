@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
+import { linkWhats } from "@/lib/whatsapp";
 import { CamposCliente, lerCliente } from "../campos";
 
 export default async function Cliente({ params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +28,9 @@ export default async function Cliente({ params }: { params: Promise<{ id: string
         <div>
           <h1 className="title">{c.name}</h1>
           <p className="muted">Cadastro completo do cliente.</p>
+          {linkWhats(c.mobile || c.phone, `Olá, ${c.name}! Aqui é da Infor Cartuchos.`) && (
+            <a className="btn secondary" target="_blank" rel="noreferrer" href={linkWhats(c.mobile || c.phone, `Olá, ${c.name}! Aqui é da Infor Cartuchos.`)!}>Chamar no WhatsApp</a>
+          )}
         </div>
         <Link href="/clientes" className="muted">← Voltar</Link>
       </div>

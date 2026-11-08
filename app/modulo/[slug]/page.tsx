@@ -1,3 +1,4 @@
+import { tudo } from "@/lib/paginar";
 import Link from "next/link";
 import { getContexto } from "@/lib/contexto";
 import { podeVer } from "@/lib/permissoes";
@@ -15,6 +16,13 @@ const LEGADO: Record<string, { modulo: string; ordem: string; cols: Col[] }> = {
   termos: { modulo: "garantias", ordem: "dataGarantia", cols: [
     { t: "Nº", f: (d) => "#" + d.idGarantias }, { t: "Termo", f: (d) => String(d.refGarantia ?? "") }, { t: "Prazo (dias)", f: (d) => String(d.prazo_garantia ?? "") }, { t: "Texto", f: (d) => String(d.textoGarantia ?? "").replace(/<[^>]+>/g, " ").slice(0, 600) },
   ] },
+  "historico-estoque": { modulo: "movimentacao", ordem: "data", cols: [
+    { t: "Data", f: (d) => fmtData(d.data) }, { t: "Produto", f: (d) => String(d.produto ?? "") }, { t: "Origem", f: (d) => String(d.referencia ?? d.origem ?? "") },
+    { t: "Cliente", f: (d) => String(d.cliente ?? "") }, { t: "Qtd", f: (d) => String(d.quantidade ?? "") }, { t: "Valor", f: (d) => moeda(Number(d.valorTotal)) },
+  ] },
+  "modelos-orcamento": { modulo: "orcamento_modelos", ordem: "idModelo", cols: [
+    { t: "Nº", f: (d) => "#" + d.idModelo }, { t: "Modelo", f: (d) => String(d.nome ?? "") }, { t: "Texto", f: (d) => String(d.descricao ?? "").replace(/<[^>]+>/g, " ").slice(0, 800) },
+  ] },
   orcamentos: { modulo: "orcamentos", ordem: "created_at", cols: [
     { t: "Nº", f: (d) => "#" + d.numero }, { t: "Data", f: (d) => fmtData(d.created_at) }, { t: "Cliente", f: (d) => String(d.cliente_display ?? d.nomeCliente ?? d.lead_nome ?? "") },
     { t: "Título", f: (d) => String(d.titulo ?? d.resumo ?? "") }, { t: "Status", f: (d) => String(d.status ?? "") }, { t: "Total", f: (d) => moeda(Number(d.valorTotal)) },
@@ -27,7 +35,7 @@ const NOMES: Record<string, string> = {
   garantias: "Garantias", vendas: "Vendas", transferencias: "Transferências", extratos: "Extratos", dre: "DRE",
   metricas: "Métricas", comissoes: "Comissões", "notas-fiscais": "Notas fiscais", relatorios: "Relatórios",
   emitente: "Emitente e filiais", termos: "Termos de garantia", checklist: "Checklist", tags: "Tags",
-  parametros: "Parâmetros", "painel-de-gestao": "Painel de gestão",
+  "historico-estoque": "Histórico de movimentação (Inforos)", "modelos-orcamento": "Modelos de orçamento", parametros: "Parâmetros", "painel-de-gestao": "Painel de gestão",
 };
 
 export default async function Modulo({ params }: { params: Promise<{ slug: string }> }) {
@@ -36,7 +44,7 @@ export default async function Modulo({ params }: { params: Promise<{ slug: strin
   const nome = NOMES[slug] ?? slug;
   const cfg = LEGADO[slug];
   if (cfg && podeVer(perfil?.role, (perfil as any)?.permissions, "financeiro")) {
-    const { data } = await supabase.from("legacy_records").select("id, data").eq("module", cfg.modulo).limit(500);
+    const data = await tudo(() => supabase.from("legacy_records").select("id, data").eq("module", cfg.modulo).order("id"));
     const linhas = (data ?? []).map((r: any) => r.data).sort((a: any, b: any) => String(b[cfg.ordem] ?? "").localeCompare(String(a[cfg.ordem] ?? "")));
     return (
       <main className="wrap">

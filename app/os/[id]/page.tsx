@@ -137,6 +137,19 @@ async function faturar(formData: FormData) {
   redirect(`/os/${order_id}?ok=1`);
 }
 
+async function enviarAprovacao(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const refazer = formData.get("refazer") === "1";
+  const upd: any = { approval_status: "pendente" };
+  if (refazer) Object.assign(upd, { approval_at: null, approval_name: null, approval_signature: null, approval_note: null });
+  const { error } = await supabase.from("service_orders").update(upd).eq("id", order_id);
+  if (error) redirect(`/os/${order_id}?erro=` + encodeURIComponent(error.message));
+  revalidatePath(`/os/${order_id}`);
+  redirect(`/os/${order_id}`);
+}
+
 async function removerItem(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -431,6 +444,56 @@ export default async function DetalheOS({
           </form>
         )}
       </section>
+      <section className="card" style={{ marginTop: 14 }}>
+        <h2 style={{ marginTop: 0 }}>Aprovação do orçamento</h2>
+        {!o.approval_status ? (
+          editar ? (
+            <form action={enviarAprovacao}>
+              <input type="hidden" name="order_id" value={o.id} />
+              <p className="muted" style={{ marginTop: 0 }}>Gera um link para o cliente ver o orçamento, aprovar e assinar pelo celular.</p>
+              <button className="btn secondary">Gerar link de aprovação</button>
+            </form>
+          ) : (
+            <p className="muted">Ainda não enviado ao cliente.</p>
+          )
+        ) : (
+          <>
+            <p>
+              Situação:{" "}
+              <b>{o.approval_status === "pendente" ? "Aguardando o cliente" : o.approval_status === "aprovado" ? "Aprovado" : "Recusado"}</b>
+              {o.approval_name && <> · {o.approval_name}</>}
+              {o.approval_note && <> · “{o.approval_note}”</>}
+            </p>
+            <p style={{ wordBreak: "break-all" }}>
+              Link: <Link href={`/orcamento/${o.approval_token}`} style={{ color: "var(--link)" }}>{`/orcamento/${o.approval_token}`}</Link>
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a
+                className="btn secondary"
+                href={`https://wa.me/${String(o.clients?.phone ?? "").replace(/\D/g, "").replace(/^(\d{10,11})$/, "55$1")}?text=${encodeURIComponent(
+                  `Olá! Segue o orçamento da OS #${o.number} para sua aprovação: ${process.env.NEXT_PUBLIC_SITE_URL ?? "https://inforgest.com.br"}/orcamento/${o.approval_token}`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Enviar por WhatsApp
+              </a>
+              {editar && o.approval_status !== "pendente" && (
+                <form action={enviarAprovacao}>
+                  <input type="hidden" name="order_id" value={o.id} />
+                  <input type="hidden" name="refazer" value="1" />
+                  <button className="btn secondary">Pedir nova aprovação</button>
+                </form>
+              )}
+            </div>
+            {o.approval_signature && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={o.approval_signature} alt="Assinatura do cliente" style={{ background: "#fff", borderRadius: 8, maxWidth: 260, marginTop: 10 }} />
+            )}
+          </>
+        )}
+      </section>
+
       {verFin && (
         <form id="fin" action={salvarFinanceiro} className="card grid g4" style={{ marginTop: 14 }}>
           <input type="hidden" name="order_id" value={o.id} />

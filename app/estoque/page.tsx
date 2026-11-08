@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
+import { podeEditar, podeVer } from "@/lib/permissoes";
+import { moeda } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 async function criarPeca(formData: FormData) {
@@ -34,6 +36,20 @@ async function criarPeca(formData: FormData) {
   redirect("/estoque?aba=" + encodeURIComponent(aba));
 }
 
+async function salvarPrecos(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const part_id = String(formData.get("id"));
+  const num = (k: string) => Number(String(formData.get(k) || "0").replace(",", ".")) || 0;
+  const aba = String(formData.get("aba") || "");
+  const { error } = await supabase
+    .from("part_prices")
+    .upsert({ part_id, sale_price: num("sale_price"), cost_price: num("cost_price") }, { onConflict: "part_id" });
+  if (error) redirect("/estoque?erro=" + encodeURIComponent(error.message));
+  revalidatePath("/estoque");
+  redirect("/estoque?aba=" + encodeURIComponent(aba));
+}
+
 async function registrarEntrada(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -61,9 +77,16 @@ async function registrarEntrada(formData: FormData) {
 
 export default async function Estoque({ searchParams }: { searchParams: Promise<{ erro?: string; aba?: string; q?: string }> }) {
   const { erro, aba: abaSel, q } = await searchParams;
-  const { supabase } = await getContexto();
+  const { supabase, perfil } = await getContexto();
+  const verFin = podeVer(perfil?.role, (perfil as any)?.permissions, "financeiro");
+  const editFin = podeEditar(perfil?.role, (perfil as any)?.permissions, "financeiro");
   const { data } = await supabase.from("parts").select("*").eq("active", true).order("name");
   const todas: any[] = data ?? [];
+  const precos: Record<string, any> = {};
+  if (verFin) {
+    const { data: pp } = await supabase.from("part_prices").select("part_id, sale_price, cost_price");
+    for (const r of pp ?? []) precos[(r as any).part_id] = r;
+  }
   const abaDe = (p: any) => String(p.description ?? "").split(" · ")[0] || "Outros";
   const secaoDe = (p: any) => String(p.description ?? "").split(" · ")[1] || "";
   const abas: string[] = [];
@@ -150,6 +173,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
                 <th>Estoque</th>
                 <th>Mínimo</th>
                 <th>Entrada</th>
+                {verFin && <th>Custo / Venda</th>}
               </tr>
             </thead>
             <tbody>
@@ -170,6 +194,23 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
                         <button className="btn secondary">Adicionar</button>
                       </form>
                     </td>
+                    {verFin && (
+                      <td>
+                        {editFin ? (
+                          <form action={salvarPrecos} className="inline">
+                            <input type="hidden" name="id" value={p.id} />
+                            <input type="hidden" name="aba" value={abaAtual ?? ""} />
+                            <input name="cost_price" inputMode="decimal" defaultValue={precos[p.id]?.cost_price ?? 0} aria-label="Custo" style={{ width: 80 }} />
+                            <input name="sale_price" inputMode="decimal" defaultValue={precos[p.id]?.sale_price ?? 0} aria-label="Venda" style={{ width: 80 }} />
+                            <button className="btn secondary">Salvar</button>
+                          </form>
+                        ) : (
+                          <>
+                            {moeda(precos[p.id]?.cost_price)} / {moeda(precos[p.id]?.sale_price)}
+                          </>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

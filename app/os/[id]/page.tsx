@@ -3,9 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
-import { fmtData } from "@/lib/format";
+import { fmtData, moeda } from "@/lib/format";
 import { COR_STATUS_OS, FLUXO_OS, PRIORIDADE_OS, progressoOS, RESPONSAVEL_ETAPA, SITUACOES_OS, STATUS_OS } from "@/lib/os";
-import { podeEditar } from "@/lib/permissoes";
+import { podeEditar, podeVer } from "@/lib/permissoes";
 
 async function salvar(formData: FormData) {
   "use server";
@@ -41,18 +41,50 @@ async function adicionarItem(formData: FormData) {
   const kind = String(formData.get("kind") || "servico");
   const quantity = Number(String(formData.get("quantity") || "1").replace(",", ".")) || 1;
   const part_id = String(formData.get("part_id") || "") || null;
-  if (!description && !part_id) redirect(`/os/${order_id}?erro=` + encodeURIComponent("Descreva o serviço ou escolha a peça."));
+  const service_id = String(formData.get("service_id") || "") || null;
+  if (!description && !part_id && !service_id) redirect(`/os/${order_id}?erro=` + encodeURIComponent("Descreva o serviço ou escolha a peça."));
   let desc = description;
+  if (kind === "servico" && service_id && !desc) {
+    const { data: sv } = await supabase.from("catalog_services").select("name").eq("id", service_id).single();
+    desc = (sv as any)?.name ?? "Serviço";
+  }
   if (part_id && !desc) {
     const { data: p } = await supabase.from("parts").select("name").eq("id", part_id).single();
     desc = (p as any)?.name ?? "Peça";
   }
   const { error } = await supabase
     .from("service_order_items")
-    .insert({ order_id, kind, description: desc, quantity, part_id: kind === "peca" ? part_id : null });
+    .insert({ order_id, kind, description: desc, quantity, part_id: kind === "peca" ? part_id : null, service_id: kind === "servico" ? service_id : null });
   if (error) redirect(`/os/${order_id}?erro=` + encodeURIComponent(error.message));
   revalidatePath(`/os/${order_id}`);
   redirect(`/os/${order_id}`);
+}
+
+async function salvarFinanceiro(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const num = (k: string) => Number(String(formData.get(k) || "0").replace(",", ".")) || 0;
+  const { error } = await supabase.from("order_finance").upsert(
+    {
+      order_id,
+      discount: num("discount"),
+      advance: num("advance"),
+      payment_method: String(formData.get("payment_method") || "").trim() || null,
+      due_date: String(formData.get("due_date") || "") || null,
+    },
+    { onConflict: "order_id" }
+  );
+  if (error) redirect(`/os/${order_id}?erro=` + encodeURIComponent(error.message));
+  // preços unitários editados
+  for (const [k, v] of formData.entries()) {
+    if (!k.startsWith("preco_")) continue;
+    const item_id = k.slice(6);
+    const unit_price = Number(String(v || "0").replace(",", ".")) || 0;
+    await supabase.from("item_prices").upsert({ item_id, unit_price }, { onConflict: "item_id" });
+  }
+  revalidatePath(`/os/${order_id}`);
+  redirect(`/os/${order_id}?ok=1`);
 }
 
 async function removerItem(formData: FormData) {
@@ -85,11 +117,26 @@ export default async function DetalheOS({
   if (!os) notFound();
   const o: any = os;
 
-  const [{ data: itens }, { data: equipe }, { data: pecas }] = await Promise.all([
+  const perms = (perfil as any)?.permissions;
+  const verFin = podeVer(perfil?.role, perms, "financeiro");
+  const editFin = podeEditar(perfil?.role, perms, "financeiro");
+  const [{ data: itens }, { data: equipe }, { data: pecas }, { data: servicos }] = await Promise.all([
     supabase.from("service_order_items").select("id, kind, description, quantity").eq("order_id", id).order("created_at"),
     supabase.from("profiles").select("id, full_name").eq("active", true).order("full_name"),
     supabase.from("parts").select("id, name, code").eq("active", true).order("name"),
+    supabase.from("catalog_services").select("id, name").eq("active", true).order("name"),
   ]);
+  const precoItem: Record<string, number> = {};
+  let fin: any = { discount: 0, advance: 0, payment_method: "", due_date: "" };
+  if (verFin) {
+    const { data: ip } = await supabase.from("item_prices").select("item_id, unit_price");
+    for (const r of ip ?? []) precoItem[(r as any).item_id] = Number((r as any).unit_price);
+    const { data: of } = await supabase.from("order_finance").select("*").eq("order_id", id).maybeSingle();
+    if (of) fin = of;
+  }
+  const subtotal = (itens ?? []).reduce((t: number, i: any) => t + Number(i.quantity) * (precoItem[i.id] ?? 0), 0);
+  const total = Math.max(subtotal - Number(fin.discount ?? 0), 0);
+  const aPagar = Math.max(total - Number(fin.advance ?? 0), 0);
 
   const atendente = (equipe ?? []).find((p: any) => p.id === o.created_by)?.full_name;
   const progresso = progressoOS(o.status);
@@ -246,6 +293,8 @@ export default async function DetalheOS({
               <th>Tipo</th>
               <th>Descrição</th>
               <th>Qtd</th>
+              {verFin && <th>Valor unit.</th>}
+              {verFin && <th>Subtotal</th>}
               <th></th>
             </tr>
           </thead>
@@ -255,6 +304,16 @@ export default async function DetalheOS({
                 <td>{i.kind === "peca" ? "Peça" : "Serviço"}</td>
                 <td>{i.description}</td>
                 <td>{Number(i.quantity)}</td>
+                {verFin && (
+                  <td>
+                    {editFin ? (
+                      <input form="fin" name={`preco_${i.id}`} inputMode="decimal" defaultValue={precoItem[i.id] ?? 0} style={{ width: 90 }} aria-label="Valor unitário" />
+                    ) : (
+                      moeda(precoItem[i.id])
+                    )}
+                  </td>
+                )}
+                {verFin && <td>{moeda(Number(i.quantity) * (precoItem[i.id] ?? 0))}</td>}
                 <td>
                   {editar && (
                     <form action={removerItem}>
@@ -268,7 +327,7 @@ export default async function DetalheOS({
             ))}
             {!(itens ?? []).length && (
               <tr>
-                <td colSpan={4} className="muted">
+                <td colSpan={6} className="muted">
                   Nada lançado ainda.
                 </td>
               </tr>
@@ -283,6 +342,17 @@ export default async function DetalheOS({
               <select name="kind" defaultValue="servico">
                 <option value="servico">Serviço</option>
                 <option value="peca">Peça</option>
+              </select>
+            </label>
+            <label className="field">
+              Serviço do catálogo (se for serviço)
+              <select name="service_id" defaultValue="">
+                <option value="">—</option>
+                {(servicos ?? []).map((sv: any) => (
+                  <option key={sv.id} value={sv.id}>
+                    {sv.name}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="field">
@@ -311,6 +381,46 @@ export default async function DetalheOS({
           </form>
         )}
       </section>
+      {verFin && (
+        <form id="fin" action={salvarFinanceiro} className="card grid g4" style={{ marginTop: 14 }}>
+          <input type="hidden" name="order_id" value={o.id} />
+          <h2 style={{ gridColumn: "1/-1", margin: 0 }}>Valores</h2>
+          <div>
+            <div className="muted">Subtotal</div>
+            <b>{moeda(subtotal)}</b>
+          </div>
+          <label className="field">
+            Desconto (R$)
+            <input name="discount" inputMode="decimal" defaultValue={Number(fin.discount ?? 0)} disabled={!editFin} />
+          </label>
+          <label className="field">
+            Adiantamento (R$)
+            <input name="advance" inputMode="decimal" defaultValue={Number(fin.advance ?? 0)} disabled={!editFin} />
+          </label>
+          <div>
+            <div className="muted">Total / a pagar</div>
+            <b>{moeda(total)}</b> / <b>{moeda(aPagar)}</b>
+          </div>
+          <label className="field">
+            Forma de pagamento
+            <input name="payment_method" list="formas" defaultValue={fin.payment_method ?? ""} disabled={!editFin} />
+            <datalist id="formas">
+              {["Pix", "Dinheiro", "Débito", "Crédito", "Boleto", "Transferência"].map((f) => (
+                <option key={f} value={f} />
+              ))}
+            </datalist>
+          </label>
+          <label className="field">
+            Vencimento
+            <input name="due_date" type="date" defaultValue={fin.due_date ?? ""} disabled={!editFin} />
+          </label>
+          {editFin && (
+            <div style={{ gridColumn: "1/-1" }}>
+              <button className="btn primary">Salvar valores</button>
+            </div>
+          )}
+        </form>
+      )}
     </main>
   );
 }

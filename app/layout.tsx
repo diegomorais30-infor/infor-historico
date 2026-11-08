@@ -47,6 +47,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         { href: "/dashboard", nome: "Início", icone: "🏠" },
         podeVer(papel, perms, "chamados") && { href: "/chamados", nome: "Chamados", icone: "📩", badge: abertos },
         podeVer(papel, perms, "os") && { href: "/os", nome: "Ordens de serviço", icone: "🛠️" },
+        podeVer(papel, perms, "os") && { href: "/servicos", nome: "Serviços", icone: "🧰" },
         podeVer(papel, perms, "clientes") && { href: "/clientes", nome: "Clientes", icone: "👥" },
         podeVer(papel, perms, "equipamentos") && { href: "/equipamentos", nome: "Equipamentos", icone: "🖨️" },
         podeVer(papel, perms, "equipamentos") && { href: "/ler-qr", nome: "Ler QR", icone: "📷" },

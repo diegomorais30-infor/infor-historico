@@ -8,6 +8,7 @@ export const AREAS: { chave: string; nome: string; href: string }[] = [
   { chave: "pecas", nome: "Estoque", href: "/estoque" },
   { chave: "leituras", nome: "Leituras", href: "/leituras" },
   { chave: "contratos", nome: "Contratos e faturas", href: "/contratos" },
+  { chave: "financeiro", nome: "Financeiro e preços", href: "/financeiro" },
 ];
 
 export const NIVEIS: Record<string, string> = { none: "Sem acesso", read: "Só ver", edit: "Ver e editar" };
@@ -19,7 +20,7 @@ export function nivelDe(role: string | null | undefined, permissions: any, area:
   const v = permissions && typeof permissions === "object" ? permissions[area] : undefined;
   if (v === "none" || v === "read" || v === "edit") return v;
   if (role === "manager") return "edit";
-  return area === "contratos" ? "none" : "edit";
+  return area === "contratos" || area === "financeiro" ? "none" : "edit";
 }
 
 export const podeVer = (role: any, perms: any, area: string) => nivelDe(role, perms, area) !== "none";

@@ -8,7 +8,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
   let query = supabase.from("clients").select("*").order("name", { ascending: true }).limit(1000);
   if (q) {
     const t = q.replace(/[%,()]/g, " ").trim();
-    query = query.or(`name.ilike.%${t}%,trade_name.ilike.%${t}%,document.ilike.%${t}%,phone.ilike.%${t}%,city.ilike.%${t}%`);
+    query = query.or(`name.ilike.%${t}%,trade_name.ilike.%${t}%,document.ilike.%${t}%,phone.ilike.%${t}%,mobile.ilike.%${t}%,city.ilike.%${t}%`);
   }
   const { data: clientes } = await query;
 
@@ -38,7 +38,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
                 <td><Link href={`/clientes/${c.id}`}><b>{c.name}</b></Link>{c.trade_name ? <div className="muted">{c.trade_name}</div> : null}</td>
                 <td>{c.document || "-"}</td>
                 <td>{c.contact_name || "-"}</td>
-                <td>{c.phone || "-"}</td>
+                <td>{[c.phone, c.mobile].filter(Boolean).join(" / ") || "-"}</td>
                 <td>{c.email || "-"}</td>
                 <td>{[c.city, c.state].filter(Boolean).join("/") || "-"}</td>
               </tr>

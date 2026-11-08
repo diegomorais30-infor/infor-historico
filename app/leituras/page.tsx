@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
-import { hojeBR, mesRotulo, somaMes } from "@/lib/format";
+import { hojeBR, mesRotulo, somaMes, moeda } from "@/lib/format";
 
 function voltar(mes: string, tipo: "erro" | "aviso", texto: string): never {
   redirect(`/leituras?mes=${mes}&${tipo}=${encodeURIComponent(texto)}`);
@@ -59,12 +59,46 @@ async function salvarLeitura(formData: FormData) {
   redirect(`/leituras?mes=${mes}`);
 }
 
+async function salvarValores(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const mes = String(formData.get("mes"));
+  const contrato = String(formData.get("contrato"));
+  if (!/^\d{4}-\d{2}$/.test(mes) || !contrato) redirect("/leituras");
+  const num = (k: string) => {
+    const b = String(formData.get(k) ?? "").trim().replace(",", ".");
+    if (b === "") return null;
+    const n = Number(b);
+    return Number.isFinite(n) && n >= 0 ? n : NaN;
+  };
+  const campos = {
+    monthly_fee: num("monthly_fee"),
+    pages_included_bw: num("pages_included_bw"),
+    pages_included_color: num("pages_included_color"),
+    extra_page_price_bw: num("extra_page_price_bw"),
+    extra_page_price_color: num("extra_page_price_color"),
+  };
+  if (Object.values(campos).some((v) => Number.isNaN(v))) voltar(mes, "erro", "Valor inválido nos valores específicos.");
+  const nota = String(formData.get("note") ?? "").trim() || null;
+  if (Object.values(campos).every((v) => v === null) && !nota) {
+    await supabase.from("contract_month_terms").delete().eq("contract_id", contrato).eq("reference_month", `${mes}-01`);
+  } else {
+    const { error } = await supabase.from("contract_month_terms").upsert(
+      { contract_id: contrato, reference_month: `${mes}-01`, ...campos, pages_included_bw: campos.pages_included_bw === null ? null : Math.round(campos.pages_included_bw as number), pages_included_color: campos.pages_included_color === null ? null : Math.round(campos.pages_included_color as number), note: nota },
+      { onConflict: "contract_id,reference_month" }
+    );
+    if (error) voltar(mes, "erro", error.message);
+  }
+  revalidatePath("/leituras");
+  redirect(`/leituras?mes=${mes}&aviso=${encodeURIComponent("Valores do mês salvos. Feche o mês no contrato para refazer a fatura.")}`);
+}
+
 export default async function Leituras({
   searchParams,
 }: {
   searchParams: Promise<{ mes?: string; erro?: string; aviso?: string; ver?: string; cliente?: string; escopo?: string; q?: string }>;
 }) {
-  const { mes: mesParam, erro, ver: verParam, cliente: clienteSel, escopo: escopoParam, q } = await searchParams;
+  const { mes: mesParam, erro, aviso, ver: verParam, cliente: clienteSel, escopo: escopoParam, q } = await searchParams;
   const mes = mesParam && /^\d{4}-\d{2}$/.test(mesParam) ? mesParam : hojeBR().slice(0, 7);
   const ver = verParam === "contrato" ? "contrato" : "cliente";
   const escopo = escopoParam === "todas" ? "todas" : "locacao";
@@ -96,6 +130,11 @@ export default async function Leituras({
   (antigas ?? []).forEach((l: any) => {
     if (!anterior.has(l.equipment_id)) anterior.set(l.equipment_id, l);
   });
+
+  const { data: contratosDados } = await supabase.from("contracts").select("id, code, monthly_fee, pages_included_bw, pages_included_color, extra_page_price_bw, extra_page_price_color");
+  const contratoPorId = new Map<string, any>((contratosDados ?? []).map((c: any) => [c.id, c]));
+  const { data: termosMes } = await supabase.from("contract_month_terms").select("*").eq("reference_month", `${mes}-01`);
+  const termoPorContrato = new Map<string, any>((termosMes ?? []).map((t: any) => [t.contract_id, t]));
 
   const lidas = lista.filter((e) => leituraDoMes.has(e.id)).length;
 
@@ -134,6 +173,7 @@ export default async function Leituras({
       </div>
 
       {erro && <div className="error" style={{ marginBottom: 14 }}>{erro}</div>}
+      {aviso && <div className="card" style={{ marginBottom: 14 }}>{aviso}</div>}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
         <Link className={ver === "cliente" ? "btn primary" : "btn secondary"} href={base({ ver: "cliente" })}>Por cliente</Link>
@@ -164,6 +204,39 @@ export default async function Leituras({
               <b>{g.titulo}</b>
               <span className={feitas === g.itens.length ? "badge" : "badge warn"}>{feitas}/{g.itens.length} lidas</span>
             </div>
+            {Array.from(new Set(g.itens.map((e: any) => e.contract_id).filter(Boolean))).map((cid: any) => {
+              const c = contratoPorId.get(cid);
+              const t = termoPorContrato.get(cid);
+              if (!c) return null;
+              const campo = (nome: string, rotulo: string, padrao: any, passo = "0.01") => (
+                <label className="field" style={{ minWidth: 130 }}>{rotulo}
+                  <input name={nome} type="number" min="0" step={passo} defaultValue={t?.[nome] ?? ""} placeholder={String(padrao ?? "")} />
+                </label>
+              );
+              return (
+                <details key={cid} style={{ marginBottom: 10 }} open={!!t}>
+                  <summary style={{ cursor: "pointer" }}>
+                    <b>Valores específicos de {mesRotulo(mes)}</b> — contrato {c.code}
+                    {t ? <span className="badge warn" style={{ marginLeft: 8 }}>personalizado</span> : <span className="muted"> (usando os valores do contrato: mensalidade {moeda(c.monthly_fee)})</span>}
+                  </summary>
+                  <form action={salvarValores} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end", marginTop: 8 }}>
+                    <input type="hidden" name="mes" value={mes} />
+                    <input type="hidden" name="contrato" value={cid} />
+                    {campo("monthly_fee", "Mensalidade (R$)", c.monthly_fee)}
+                    {campo("pages_included_bw", "Franquia P&B", c.pages_included_bw, "1")}
+                    {campo("pages_included_color", "Franquia cor", c.pages_included_color, "1")}
+                    {campo("extra_page_price_bw", "Página extra P&B (R$)", c.extra_page_price_bw, "0.0001")}
+                    {campo("extra_page_price_color", "Página extra cor (R$)", c.extra_page_price_color, "0.0001")}
+                    <label className="field" style={{ minWidth: 180, flex: 1 }}>Observação
+                      <input name="note" defaultValue={t?.note ?? ""} />
+                    </label>
+                    <button className="btn secondary">Salvar valores</button>
+                    <Link className="btn secondary" href={`/contratos/${cid}`}>Fechar mês / fatura</Link>
+                  </form>
+                  <p className="muted" style={{ margin: "6px 0 0" }}>Campo vazio = usa o valor do contrato (mostrado em cinza). Só vale para {mesRotulo(mes)}.</p>
+                </details>
+              );
+            })}
             <table className="table">
               <thead>
                 <tr>

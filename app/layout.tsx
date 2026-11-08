@@ -79,9 +79,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         // Financeiro
         M("/financeiro", "Faturas / lançamentos", "💰", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/modulo/transferencias", "Transferências", "↔️", v("financeiro"), { grupo: "Financeiro", sub: true }),
-        M("/modulo/extratos", "Extratos", "📃", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/extratos", "Extratos", "📃", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/financeiro/fluxo", "Fluxo de caixa", "📈", v("financeiro"), { grupo: "Financeiro", sub: true }),
-        M("/modulo/dre", "DRE", "📑", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/dre", "DRE", "📑", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/modulo/metricas", "Métricas", "📊", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/modulo/comissoes", "Comissões", "🤝", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/modulo/notas-fiscais", "Notas fiscais", "🧮", v("financeiro")),
@@ -102,7 +102,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         {user ? (
           <div className="shell">
-            <MenuLateral logo={<Logo />} itens={itens} />
+            <MenuLateral logo={<Logo size={46} />} itens={itens} />
             <div className="conteudo">
               <div className="userbar">
                 {empresa && <span className="muted">{empresa}</span>}

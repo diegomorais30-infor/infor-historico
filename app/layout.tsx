@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./logout-button";
 import InstalarApp from "@/components/instalar-app";
 import { podeVer } from "@/lib/permissoes";
+import MenuLateral, { type ItemMenu } from "@/components/menu-lateral";
 
 export const viewport = { themeColor: "#0a1a33" };
 
@@ -41,35 +42,47 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     perms = (data as any)?.permissions ?? {};
   }
 
+  const itens: ItemMenu[] = user
+    ? ([
+        { href: "/dashboard", nome: "Início", icone: "🏠" },
+        podeVer(papel, perms, "chamados") && { href: "/chamados", nome: "Chamados", icone: "📩", badge: abertos },
+        podeVer(papel, perms, "os") && { href: "/os", nome: "Ordens de serviço", icone: "🛠️" },
+        podeVer(papel, perms, "clientes") && { href: "/clientes", nome: "Clientes", icone: "👥" },
+        podeVer(papel, perms, "equipamentos") && { href: "/equipamentos", nome: "Equipamentos", icone: "🖨️" },
+        podeVer(papel, perms, "equipamentos") && { href: "/ler-qr", nome: "Ler QR", icone: "📷" },
+        podeVer(papel, perms, "contratos") && { href: "/contratos", nome: "Contratos", icone: "📄" },
+        podeVer(papel, perms, "leituras") && { href: "/leituras", nome: "Leituras", icone: "📊" },
+        podeVer(papel, perms, "pecas") && { href: "/estoque", nome: "Estoque", icone: "📦" },
+        papel === "admin" && { href: "/usuarios", nome: "Usuários", icone: "⚙️" },
+      ].filter(Boolean) as ItemMenu[])
+    : [];
+
   return (
     <html lang="pt-BR">
       <body>
-        <header className="top">
-          <div className="wrap topbar">
-            <Link href={user ? "/dashboard" : "/login"} className="brand">
-              <Logo />
-            </Link>
-            {user && (
-              <nav className="topnav">
-                <Link href="/dashboard">Início</Link>
-                {podeVer(papel, perms, "chamados") && <Link href="/chamados">Chamados{abertos > 0 ? ` (${abertos})` : ""}</Link>}
-                {podeVer(papel, perms, "os") && <Link href="/os">OS</Link>}
-                {podeVer(papel, perms, "equipamentos") && <Link href="/equipamentos">Equipamentos</Link>}
-                {podeVer(papel, perms, "equipamentos") && <Link href="/ler-qr">Ler QR</Link>}
-                {podeVer(papel, perms, "clientes") && <Link href="/clientes">Clientes</Link>}
-                {podeVer(papel, perms, "contratos") && <Link href="/contratos">Contratos</Link>}
-                {podeVer(papel, perms, "leituras") && <Link href="/leituras">Leituras</Link>}
-                {podeVer(papel, perms, "pecas") && <Link href="/estoque">Estoque</Link>}
-                {papel === "admin" && <Link href="/usuarios">Usuários</Link>}
-              </nav>
-            )}
-            <div className="topuser">
-              {empresa && <span className="muted">{empresa}</span>}
-              {user && <LogoutButton />}
+        {user ? (
+          <div className="shell">
+            <MenuLateral logo={<Logo />} itens={itens} />
+            <div className="conteudo">
+              <div className="userbar">
+                {empresa && <span className="muted">{empresa}</span>}
+                <LogoutButton />
+              </div>
+              {children}
             </div>
           </div>
-        </header>
-        {children}
+        ) : (
+          <>
+            <header className="top">
+              <div className="wrap topbar">
+                <Link href="/login" className="brand">
+                  <Logo />
+                </Link>
+              </div>
+            </header>
+            {children}
+          </>
+        )}
         {user && <InstalarApp />}
       </body>
     </html>

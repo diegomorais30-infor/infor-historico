@@ -135,6 +135,68 @@ export async function POST(req: NextRequest) {
       if (desc || adi) await db.from("order_finance").upsert({ order_id: os.id, company_id: EMPRESA, discount: desc, advance: adi, payment_method: s(d.formasPagamento) }, { onConflict: "order_id" });
       ok++;
     }
+  } else if (tipo === "produtos") {
+    const num = (x: any) => { const n = Number(x); return Number.isFinite(n) ? n : 0; };
+    for (const r of registros) {
+      const { data: p, error } = await db.from("parts").upsert({
+        company_id: EMPRESA, legacy_ref: String(r.idProdutos), name: s(r.descricao) ?? "(sem nome)", description: s(r.observacoes),
+        barcode: s(r.barcode), unit: s(r.unidade), stock_quantity: Math.max(num(r.estoqueReal), 0), minimum_stock: Math.max(num(r.estoqueMinimo), 0),
+        active: String(r.ativo) !== "0", legacy_data: r,
+      }, { onConflict: "company_id,legacy_ref" }).select("id").single();
+      if (error || !p) { erros.push(`produto ${r.idProdutos}: ${error?.message}`); continue; }
+      await db.from("part_prices").upsert({ part_id: p.id, company_id: EMPRESA, sale_price: num(r.precoVenda), cost_price: num(r.precoCompra) }, { onConflict: "part_id" });
+      ok++;
+    }
+  } else if (tipo === "servicos") {
+    for (const r of registros) {
+      const { data: sv, error } = await db.from("catalog_services").upsert({
+        company_id: EMPRESA, legacy_ref: String(r.idServicos), name: s(r.nome) ?? "(sem nome)", description: s(r.descricao), active: String(r.ativo) !== "0", legacy_data: r,
+      }, { onConflict: "company_id,legacy_ref" }).select("id").single();
+      if (error || !sv) { erros.push(`servico ${r.idServicos}: ${error?.message}`); continue; }
+      await db.from("service_prices").upsert({ service_id: sv.id, company_id: EMPRESA, price: Number(r.preco) || 0 }, { onConflict: "service_id" });
+      ok++;
+    }
+  } else if (tipo === "vendas") {
+    const num = (x: any) => { const n = Number(x); return Number.isFinite(n) ? n : 0; };
+    const { data: cls } = await db.from("clients").select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null);
+    const mc = new Map((cls ?? []).map((c: any) => [String(c.legacy_ref), c.id]));
+    for (const r of registros) {
+      const l = r.l ?? {}; const d = r.d ?? {};
+      const ref = String(l.idVendas);
+      const { data: v, error } = await db.from("sales").upsert({
+        company_id: EMPRESA, legacy_ref: ref, number: Number(l.idVendas), client_id: mc.get(String(l.clientes_id)) ?? null,
+        sold_at: dt(l.dataVenda) ? String(l.dataVenda).slice(0, 10) : String(l.created_at ?? "").slice(0, 10),
+        total: num(l.valorTotal), discount: num(l.desconto), freight: num(l.valor_frete), billed: String(l.faturado) === "1",
+        seller: s(d.vendedor), origin: s(l.origemVenda), notes: s(d.observacoes) ?? s(l.obsVendas), legacy_data: { lista: l, detalhe: d },
+      }, { onConflict: "company_id,legacy_ref" }).select("id").single();
+      if (error || !v) { erros.push(`venda ${ref}: ${error?.message}`); continue; }
+      await db.from("sale_items").delete().eq("sale_id", v.id);
+      const itens = (d.itens ?? []).map((it: any) => ({ company_id: EMPRESA, sale_id: v.id, kind: "produto", description: [s(it.nome), s(it.descritivo)].filter(Boolean).join(" — ") || "(sem descrição)", quantity: num(it.quantidade) || 1, unit_price: num(it.valor), discount: num(it.desconto), legacy_data: it }));
+      if (itens.length) { const { error: e2 } = await db.from("sale_items").insert(itens); if (e2) erros.push(`venda ${ref} itens: ${e2.message}`); }
+      ok++;
+    }
+  } else if (tipo === "financeiro") {
+    const num = (x: any) => { const n = Number(x); return Number.isFinite(n) ? n : 0; };
+    const { cat = {}, linhas: regs } = registros as any;
+    const get = async (tab: string) => { const { data } = await db.from(tab).select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null); return new Map((data ?? []).map((c: any) => [String(c.legacy_ref), c.id])); };
+    const [mc, ms, mo, mv] = await Promise.all([get("clients"), get("suppliers"), get("service_orders"), get("sales")]);
+    const linhas = (regs as any[]).map((r) => {
+      const valor = Math.max(num(r.valor) - num(r.desconto) + num(r.juros), 0);
+      const origem = String(r.origem ?? "");
+      return {
+        company_id: EMPRESA, legacy_ref: String(r.idFaturas), kind: String(r.tipo) === "receita" ? "receita" : "despesa",
+        description: s(r.descricao) ?? "(sem descrição)", category: cat[String(r.categorias_id)] ?? null, party: s(r.cliente_fornecedor),
+        client_id: mc.get(String(r.clientes_id)) ?? null, supplier_id: String(r.tipo) === "despesa" ? ms.get(String(r.clientes_id)) ?? null : null,
+        order_id: origem === "Os" ? mo.get(String(r.origem_id)) ?? null : null, sale_id: origem === "Vendas" ? mv.get(String(r.origem_id)) ?? null : null,
+        origin: "inforos", amount: valor, payment_method: s(r.forma_pgto),
+        competence: dt(r.data_criacao) ?? dt(r.data_vencimento), due_date: dt(r.data_vencimento) ?? dt(r.data_criacao),
+        paid_at: String(r.baixado) === "1" ? dt(r.data_pagamento) : null, legacy_data: r,
+      };
+    });
+    for (let i = 0; i < linhas.length; i += 200) {
+      const { error } = await db.from("finance_entries").upsert(linhas.slice(i, i + 200), { onConflict: "company_id,legacy_ref" });
+      if (error) erros.push(error.message); else ok += Math.min(200, linhas.length - i);
+    }
   } else {
     return NextResponse.json({ erro: "tipo desconhecido" }, { status: 400, headers: CORS });
   }

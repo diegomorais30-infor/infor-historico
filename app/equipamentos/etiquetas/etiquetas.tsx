@@ -14,7 +14,17 @@ function fmtFone(n: string) {
 }
 
 export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: Item[]; whatsapp: string; empresa: string; slug: string }) {
-  const [sel, setSel] = useState<Set<string>>(new Set(itens.map((i) => i.id)));
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [busca, setBusca] = useState("");
+  const [cli, setCli] = useState("");
+  const [soTag, setSoTag] = useState(true);
+  const clientes = useMemo(() => Array.from(new Set(itens.map((i) => i.cliente).filter(Boolean))).sort((a, b) => a.localeCompare(b)), [itens]);
+  const visiveis = useMemo(() => {
+    const t = busca.trim().toLowerCase();
+    return itens
+      .filter((i) => (!soTag || i.tag) && (!cli || i.cliente === cli) && (!t || `${i.tag} ${i.code} ${i.marca} ${i.serie} ${i.cliente}`.toLowerCase().includes(t)))
+      .sort((a, b) => a.cliente.localeCompare(b.cliente) || a.tag.localeCompare(b.tag, undefined, { numeric: true }));
+  }, [itens, busca, cli, soTag]);
   const [qrs, setQrs] = useState<Record<string, string>>({});
 
   const escolhidos = useMemo(() => itens.filter((i) => sel.has(i.id)), [itens, sel]);
@@ -51,8 +61,8 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
             {escolhidos.length} de {itens.length} selecionado(s) · {folhas.length} folha(s)
           </strong>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn secondary" onClick={() => setSel(new Set(itens.map((i) => i.id)))}>
-              Marcar todos
+            <button type="button" className="btn secondary" onClick={() => setSel(new Set([...sel, ...visiveis.map((i) => i.id)]))}>
+              Marcar os {visiveis.length} da lista
             </button>
             <button type="button" className="btn secondary" onClick={() => setSel(new Set())}>
               Limpar
@@ -62,8 +72,20 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
             </button>
           </span>
         </div>
-        <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
-          {itens.map((i) => (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar patrimônio, modelo, série ou cliente" style={{ flex: 1, minWidth: 220 }} />
+          <select value={cli} onChange={(e) => setCli(e.target.value)}>
+            <option value="">Todos os clientes</option>
+            {clientes.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input type="checkbox" checked={soTag} onChange={(e) => setSoTag(e.target.checked)} /> Só com patrimônio
+          </label>
+        </div>
+        <div style={{ display: "grid", gap: 6, marginTop: 10, maxHeight: 420, overflowY: "auto" }}>
+          {visiveis.map((i) => (
             <label key={i.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={sel.has(i.id)} onChange={() => alterna(i.id)} />
               <span>
@@ -72,7 +94,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
               </span>
             </label>
           ))}
-          {!itens.length && <span className="muted">Nenhum equipamento cadastrado.</span>}
+          {!visiveis.length && <span className="muted">Nenhum equipamento encontrado com esses filtros.</span>}
         </div>
       </section>
 

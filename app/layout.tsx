@@ -52,7 +52,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/clientes", "Clientes", "👥", v("clientes")),
         M("/fornecedores", "Fornecedores", "🚚", v("financeiro")),
         M("/equipamentos", "Equipamentos", "🖨️", v("equipamentos")),
-        M("/ler-qr", "Ler QR / etiquetas", "📷", v("equipamentos")),
+        M("/equipamentos/etiquetas", "Imprimir QR / etiquetas", "🏷️", v("equipamentos")),
+        M("/ler-qr", "Ler QR", "📷", v("equipamentos")),
         M("/servicos", "Serviços", "🧰", v("os")),
         // Produtos
         M("/estoque", "Cadastrados", "📦", v("pecas"), { grupo: "Produtos", sub: true }),

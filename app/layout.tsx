@@ -75,7 +75,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/modulo/garantias", "Garantias", "🛡️", v("os")),
         M("/contratos", "Contratos de locação", "📄", v("contratos")),
         M("/leituras", "Leituras", "📊", v("leituras")),
-        M("/modulo/vendas", "Vendas", "🧾", v("financeiro")),
+        M("/vendas", "Vendas", "🧾", v("financeiro")),
         // Financeiro
         M("/financeiro", "Faturas / lançamentos", "💰", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/modulo/transferencias", "Transferências", "↔️", v("financeiro"), { grupo: "Financeiro", sub: true }),

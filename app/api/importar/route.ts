@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   } else if (tipo === "os") {
     const norm = (x: any) => String(x ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const STATUS: Record<string, string> = { entrada: "entrada", orcamento: "orcamento", aberto: "aberto", andamento: "andamento", "em andamento": "andamento", pausado: "pausado", concluido: "concluido", faturado: "faturado", finalizado: "finalizado", cancelado: "cancelado" };
-    const PRIO: Record<string, string> = { "1": "baixa", "2": "baixa", "3": "normal", "4": "alta", "5": "urgente" };
+    const PRIO: Record<string, string> = { "1": "alta", "2": "normal", "3": "baixa" };
     const num = (x: any) => { const n = Number(x); return Number.isFinite(n) ? n : 0; };
     const { data: cls } = await db.from("clients").select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null);
     const { data: eqs } = await db.from("equipment").select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null);
@@ -204,6 +204,25 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < rows.length; i += 100) {
       const { error } = await db.from("legacy_records").upsert(rows.slice(i, i + 100), { onConflict: "company_id,module,legacy_ref" });
       if (error) erros.push(error.message); else ok += Math.min(100, rows.length - i);
+    }
+  } else if (tipo === "anexos") {
+    // baixa as fotos do Inforos (URL assinada, 1h) no servidor e guarda no storage
+    const { data: oss } = await db.from("service_orders").select("id, legacy_ref").eq("company_id", EMPRESA).in("legacy_ref", (registros as any[]).map((r) => String(r.os)));
+    const mo = new Map((oss ?? []).map((o: any) => [String(o.legacy_ref), o.id]));
+    for (const r of registros as any[]) {
+      try {
+        const orderId = mo.get(String(r.os));
+        if (!orderId) { erros.push(`OS ${r.os} não encontrada`); continue; }
+        const resp = await fetch(r.url);
+        if (!resp.ok) { erros.push(`OS ${r.os}: download ${resp.status}`); continue; }
+        const buf = Buffer.from(await resp.arrayBuffer());
+        const nome = decodeURIComponent(String(r.url).split("?")[0].split("/").pop() ?? "foto.jpeg");
+        const path = `${EMPRESA}/${r.os}/${nome}`;
+        const { error: up } = await db.storage.from("os-anexos").upload(path, buf, { contentType: resp.headers.get("content-type") ?? "image/jpeg", upsert: true });
+        if (up) { erros.push(`OS ${r.os}: ${up.message}`); continue; }
+        const { error } = await db.from("os_attachments").upsert({ company_id: EMPRESA, order_id: orderId, grupo: s(r.grupo), path, legacy_name: nome }, { onConflict: "company_id,path" });
+        if (error) erros.push(`OS ${r.os}: ${error.message}`); else ok++;
+      } catch (e: any) { erros.push(`OS ${r.os}: ${e.message}`); }
     }
   } else {
     return NextResponse.json({ erro: "tipo desconhecido" }, { status: 400, headers: CORS });

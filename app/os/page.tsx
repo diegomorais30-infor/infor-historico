@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getContexto } from "@/lib/contexto";
 import { fmtData, hojeBR } from "@/lib/format";
-import { COR_STATUS_OS, PRIORIDADE_OS, STATUS_OS } from "@/lib/os";
+import { COR_ATRASO, COR_OK, COR_PRIORIDADE, COR_STATUS_OS, corSituacao, ROTULO_PRIORIDADE, STATUS_OS } from "@/lib/os";
 import { podeEditar } from "@/lib/permissoes";
 
 export default async function ListaOS({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; prazo?: string; prioridade?: string; situacao?: string }> }) {
@@ -125,17 +125,17 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
                     </div>
                   </td>
                   <td>
-                    <span style={{ color: COR_STATUS_OS[o.status], fontWeight: 700 }}>{STATUS_OS[o.status]}</span>
-                    {o.situacao && <div className="muted">{o.situacao}</div>}
+                    <span className="selo" style={{ background: COR_STATUS_OS[o.status] }}>{STATUS_OS[o.status]}</span>
+                    {o.situacao && <div><span className="selo" style={{ background: corSituacao(o.situacao) }}>{o.situacao}</span></div>}
                   </td>
                   <td>
                     <div>{nome(o.created_by)}</div>
                     <div className="muted">{nome(o.technician_id)}</div>
                   </td>
-                  <td className={o.priority === "urgente" || o.priority === "alta" ? "prio-Alta" : ""}>{PRIORIDADE_OS[o.priority]}</td>
-                  <td style={atrasada ? { color: "#ffb4b4", fontWeight: 700 } : undefined}>
+                  <td><span className="selo" style={{ background: COR_PRIORIDADE[o.priority] }}>{ROTULO_PRIORIDADE[o.priority] ?? o.priority}</span></td>
+                  <td>
+                    {o.deadline && !encerrada(o) && <div><span className="selo" style={{ background: atrasada ? COR_ATRASO : COR_OK }}>{atrasada ? "Vencido" : "No prazo"}</span></div>}
                     {fmtData(o.deadline)}
-                    {atrasada && <div style={{ fontSize: 12 }}>atrasada</div>}
                   </td>
                 </tr>
               );

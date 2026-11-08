@@ -46,14 +46,31 @@ export function progressoOS(status: string) {
   return i < 0 ? 0 : Math.round(((i + 1) / FLUXO_OS.length) * 100);
 }
 
+// Cores como no Inforos: etapas em aberto em dourado, etapas encerradas em cinza.
 export const COR_STATUS_OS: Record<string, string> = {
-  entrada: "#78B8FF",
-  orcamento: "#FFC800",
-  aberto: "#2F7DE1",
-  andamento: "#a58df0",
-  pausado: "#ffb4b4",
-  concluido: "#3fb583",
-  faturado: "#3fb583",
-  finalizado: "#3fb583",
-  cancelado: "#92a3b3",
+  entrada: "#c09853",
+  orcamento: "#c09853",
+  aberto: "#c09853",
+  andamento: "#c09853",
+  pausado: "#c09853",
+  concluido: "#939da8",
+  faturado: "#939da8",
+  finalizado: "#939da8",
+  cancelado: "#939da8",
 };
+
+// Selos coloridos iguais aos do Inforos: verde = ok, laranja = pendente, vermelho = atrasado/recusado.
+export const COR_OK = "#468847";
+export const COR_PENDENTE = "#f89406";
+export const COR_ATRASO = "#f74d4d";
+
+export function corSituacao(texto?: string | null) {
+  const t = (texto ?? "").toLowerCase();
+  if (/recus|sem conserto|cancel/.test(t)) return COR_ATRASO;
+  if (/realiz|autoriz|aprov|conclu|retirad|pago/.test(t)) return COR_OK;
+  if (t) return COR_PENDENTE;
+  return "#6b7a8d";
+}
+
+export const COR_PRIORIDADE: Record<string, string> = { baixa: COR_OK, normal: COR_PENDENTE, alta: COR_ATRASO, urgente: COR_ATRASO };
+export const ROTULO_PRIORIDADE: Record<string, string> = { baixa: "Baixa prioridade", normal: "Média prioridade", alta: "Alta prioridade", urgente: "Urgente" };

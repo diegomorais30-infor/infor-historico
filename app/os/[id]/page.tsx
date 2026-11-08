@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
 import { fmtData, moeda } from "@/lib/format";
-import { COR_STATUS_OS, FLUXO_OS, PRIORIDADE_OS, progressoOS, RESPONSAVEL_ETAPA, SITUACOES_OS, STATUS_OS } from "@/lib/os";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { COR_PRIORIDADE, COR_STATUS_OS, corSituacao, FLUXO_OS, ROTULO_PRIORIDADE, PRIORIDADE_OS, progressoOS, RESPONSAVEL_ETAPA, SITUACOES_OS, STATUS_OS } from "@/lib/os";
 import { podeEditar, podeVer } from "@/lib/permissoes";
 
 async function salvar(formData: FormData) {
@@ -197,6 +198,13 @@ export default async function DetalheOS({
     const { data: of } = await supabase.from("order_finance").select("*").eq("order_id", id).maybeSingle();
     if (of) fin = of;
   }
+  const { data: anexos } = await supabase.from("os_attachments").select("id, grupo, path").eq("order_id", id).order("path");
+  const fotos: { url: string; grupo: string | null }[] = [];
+  if ((anexos ?? []).length) {
+    const adm = createAdminClient();
+    const { data: urls } = await adm.storage.from("os-anexos").createSignedUrls((anexos ?? []).map((a: any) => a.path), 3600);
+    (urls ?? []).forEach((u: any, i: number) => u.signedUrl && fotos.push({ url: u.signedUrl, grupo: (anexos as any)[i].grupo }));
+  }
   const subtotal = (itens ?? []).reduce((t: number, i: any) => t + Number(i.quantity) * (precoItem[i.id] ?? 0), 0);
   const total = Math.max(subtotal - Number(fin.discount ?? 0), 0);
   const aPagar = Math.max(total - Number(fin.advance ?? 0), 0);
@@ -212,7 +220,9 @@ export default async function DetalheOS({
           <h1 className="title">OS #{o.number}</h1>
           <div className="muted">
             Entrada em {fmtData(o.entry_at)} ·{" "}
-            <span style={{ color: COR_STATUS_OS[o.status], fontWeight: 700 }}>{STATUS_OS[o.status]}</span>
+            <span className="selo" style={{ background: COR_STATUS_OS[o.status] }}>{STATUS_OS[o.status]}</span>{" "}
+            {o.situacao && <span className="selo" style={{ background: corSituacao(o.situacao) }}>{o.situacao}</span>}{" "}
+            <span className="selo" style={{ background: COR_PRIORIDADE[o.priority] }}>{ROTULO_PRIORIDADE[o.priority] ?? o.priority}</span>
             {o.service_requests?.protocol && <> · chamado {o.service_requests.protocol}</>}
           </div>
         </div>
@@ -444,6 +454,20 @@ export default async function DetalheOS({
           </form>
         )}
       </section>
+      {fotos.length > 0 && (
+        <section className="card" style={{ marginTop: 14 }}>
+          <h2 style={{ marginTop: 0 }}>Fotos e anexos</h2>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {fotos.map((f, i) => (
+              <a key={i} href={f.url} target="_blank" rel="noreferrer" style={{ display: "block", textAlign: "center" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={f.url} alt={f.grupo ?? "foto"} style={{ width: 150, height: 150, objectFit: "cover", borderRadius: 8 }} />
+                {f.grupo && <div className="muted" style={{ textTransform: "capitalize" }}>{f.grupo}</div>}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="card" style={{ marginTop: 14 }}>
         <h2 style={{ marginTop: 0 }}>Aprovação do orçamento</h2>
         {!o.approval_status ? (

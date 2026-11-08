@@ -83,6 +83,58 @@ export async function POST(req: NextRequest) {
       }).eq("company_id", EMPRESA).eq("legacy_ref", String(r.idEquipamentos));
       if (error) erros.push(error.message); else ok++;
     }
+  } else if (tipo === "os") {
+    const norm = (x: any) => String(x ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const STATUS: Record<string, string> = { entrada: "entrada", orcamento: "orcamento", aberto: "aberto", andamento: "andamento", "em andamento": "andamento", pausado: "pausado", concluido: "concluido", faturado: "faturado", finalizado: "finalizado", cancelado: "cancelado" };
+    const PRIO: Record<string, string> = { "1": "baixa", "2": "baixa", "3": "normal", "4": "alta", "5": "urgente" };
+    const num = (x: any) => { const n = Number(x); return Number.isFinite(n) ? n : 0; };
+    const { data: cls } = await db.from("clients").select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null);
+    const { data: eqs } = await db.from("equipment").select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null);
+    const mc = new Map((cls ?? []).map((c: any) => [String(c.legacy_ref), c.id]));
+    const me = new Map((eqs ?? []).map((c: any) => [String(c.legacy_ref), c.id]));
+    for (const r of registros) {
+      const l = r.l ?? {}; const d = r.d ?? {};
+      const ref = String(l.idOs);
+      const clienteId = mc.get(String(l.clientes_id));
+      if (!clienteId) { erros.push(`OS ${ref}: cliente ${l.clientes_id} não encontrado`); continue; }
+      const eqLista = Array.isArray(l.equipamentos) ? l.equipamentos : [];
+      let equipId: string | null = null;
+      for (const e of eqLista) { const x = me.get(String(e.equipamentos_id)); if (x) { equipId = x; break; } }
+      const status = STATUS[norm(l.status)] ?? "aberto";
+      const fechada = ["concluido", "faturado", "finalizado"].includes(status);
+      const linha = {
+        company_id: EMPRESA,
+        legacy_ref: ref,
+        number: Number(l.idOs),
+        client_id: clienteId,
+        equipment_id: equipId,
+        status,
+        priority: PRIO[String(l.prioridade)] ?? "normal",
+        situacao: s(l.autorizacao),
+        defect: s(l.descricaoProduto) ?? s(l.defeito),
+        report: s(l.laudoTecnico),
+        deadline: dt(l.prazo) ? String(l.prazo).slice(0, 10) : null,
+        entry_at: dt(l.dataInicial) ? String(l.dataInicial).replace(" ", "T") + "-03:00" : null,
+        closed_at: fechada ? (dt(l.dataFinal) ?? dt(l.conclusao) ?? dt(l.dataFaturado)) && String(dt(l.dataFinal) ?? dt(l.conclusao) ?? dt(l.dataFaturado)).replace(" ", "T") + "-03:00" : null,
+        stock_deducted: fechada,
+        legacy_data: { lista: l, detalhe: d },
+      };
+      const { data: os, error } = await db.from("service_orders").upsert(linha, { onConflict: "company_id,legacy_ref" }).select("id").single();
+      if (error || !os) { erros.push(`OS ${ref}: ${error?.message}`); continue; }
+      // itens (recria)
+      await db.from("service_order_items").delete().eq("order_id", os.id);
+      const itens: any[] = [];
+      for (const [kind, arr] of [["peca", d.itens?.produtos], ["servico", d.itens?.servicos]] as const) {
+        for (const it of (arr ?? [])) {
+          const q = num(it.quantidade);
+          itens.push({ company_id: EMPRESA, order_id: os.id, kind, description: [s(it.nome), s(it.descritivo)].filter(Boolean).join(" — ") || "(sem descrição)", quantity: q > 0 ? q : 1 });
+        }
+      }
+      if (itens.length) { const { error: e2 } = await db.from("service_order_items").insert(itens); if (e2) erros.push(`OS ${ref} itens: ${e2.message}`); }
+      const desc = num(d.totais?.desconto ?? l.desconto), adi = num(d.totais?.adiantamento);
+      if (desc || adi) await db.from("order_finance").upsert({ order_id: os.id, company_id: EMPRESA, discount: desc, advance: adi, payment_method: s(d.formasPagamento) }, { onConflict: "order_id" });
+      ok++;
+    }
   } else {
     return NextResponse.json({ erro: "tipo desconhecido" }, { status: 400, headers: CORS });
   }

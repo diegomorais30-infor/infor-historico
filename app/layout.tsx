@@ -54,6 +54,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         podeVer(papel, perms, "contratos") && { href: "/contratos", nome: "Contratos", icone: "📄" },
         podeVer(papel, perms, "leituras") && { href: "/leituras", nome: "Leituras", icone: "📊" },
         podeVer(papel, perms, "pecas") && { href: "/estoque", nome: "Estoque", icone: "📦" },
+        podeVer(papel, perms, "financeiro") && { href: "/financeiro", nome: "Financeiro", icone: "💰" },
         papel === "admin" && { href: "/usuarios", nome: "Usuários", icone: "⚙️" },
       ].filter(Boolean) as ItemMenu[])
     : [];

@@ -87,6 +87,56 @@ async function salvarFinanceiro(formData: FormData) {
   redirect(`/os/${order_id}?ok=1`);
 }
 
+async function faturar(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const { data: os } = await supabase.from("service_orders").select("number, client_id, status, clients(name)").eq("id", order_id).single();
+  if (!os) redirect(`/os/${order_id}?erro=` + encodeURIComponent("OS não encontrada."));
+  const o: any = os;
+  if (!["concluido", "faturado"].includes(o.status))
+    redirect(`/os/${order_id}?erro=` + encodeURIComponent("Conclua a OS antes de faturar."));
+  const [{ data: itens }, { data: precos }, { data: fin }] = await Promise.all([
+    supabase.from("service_order_items").select("id, quantity").eq("order_id", order_id),
+    supabase.from("item_prices").select("item_id, unit_price"),
+    supabase.from("order_finance").select("*").eq("order_id", order_id).maybeSingle(),
+  ]);
+  const mapa: Record<string, number> = {};
+  for (const r of precos ?? []) mapa[(r as any).item_id] = Number((r as any).unit_price);
+  const subtotal = (itens ?? []).reduce((t: number, i: any) => t + Number(i.quantity) * (mapa[i.id] ?? 0), 0);
+  const f: any = fin ?? {};
+  const total = Math.max(subtotal - Number(f.discount ?? 0), 0);
+  const adiant = Math.min(Number(f.advance ?? 0), total);
+  const resto = total - adiant;
+  if (total <= 0) redirect(`/os/${order_id}?erro=` + encodeURIComponent("Lance os valores da OS antes de faturar."));
+  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const base = {
+    kind: "receita",
+    category: "Ordem de Serviço",
+    party: o.clients?.name ?? null,
+    client_id: o.client_id,
+    order_id,
+    payment_method: f.payment_method ?? null,
+    competence: hoje,
+  };
+  if (resto > 0) {
+    const { error } = await supabase.from("finance_entries").upsert(
+      { ...base, origin: "os_fatura", description: `OS #${o.number} · fatura`, amount: resto, due_date: f.due_date ?? hoje },
+      { onConflict: "order_id,origin", ignoreDuplicates: true }
+    );
+    if (error) redirect(`/os/${order_id}?erro=` + encodeURIComponent(error.message));
+  }
+  if (adiant > 0) {
+    await supabase.from("finance_entries").upsert(
+      { ...base, origin: "os_adiantamento", description: `OS #${o.number} · adiantamento`, amount: adiant, due_date: hoje, paid_at: hoje },
+      { onConflict: "order_id,origin", ignoreDuplicates: true }
+    );
+  }
+  await supabase.from("service_orders").update({ status: "faturado" }).eq("id", order_id);
+  revalidatePath(`/os/${order_id}`);
+  redirect(`/os/${order_id}?ok=1`);
+}
+
 async function removerItem(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -420,6 +470,21 @@ export default async function DetalheOS({
             </div>
           )}
         </form>
+      )}
+      {editFin && ["concluido"].includes(o.status) && (
+        <form action={faturar} className="card" style={{ marginTop: 14 }}>
+          <input type="hidden" name="order_id" value={o.id} />
+          <b>Faturar esta OS</b>
+          <p className="muted" style={{ margin: "6px 0 10px" }}>
+            Gera a receita no financeiro (e o adiantamento como já recebido) e muda o status para Faturado. Salve os valores antes.
+          </p>
+          <button className="btn primary">Faturar OS</button>
+        </form>
+      )}
+      {verFin && o.status === "faturado" && (
+        <p className="muted" style={{ marginTop: 14 }}>
+          OS faturada — veja a receita em <Link href="/financeiro" style={{ color: "var(--link)" }}>Financeiro</Link>.
+        </p>
       )}
     </main>
   );

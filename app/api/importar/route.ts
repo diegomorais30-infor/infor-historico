@@ -197,6 +197,14 @@ export async function POST(req: NextRequest) {
       const { error } = await db.from("finance_entries").upsert(linhas.slice(i, i + 200), { onConflict: "company_id,legacy_ref" });
       if (error) erros.push(error.message); else ok += Math.min(200, linhas.length - i);
     }
+  } else if (tipo === "bruto") {
+    // guarda registros crus de módulos pequenos (garantias, orçamentos, compras...) sem perder nada
+    const { modulo, campo, linhas } = registros as any;
+    const rows = (linhas as any[]).map((r) => ({ company_id: EMPRESA, module: String(modulo), legacy_ref: String(r[campo]), data: r }));
+    for (let i = 0; i < rows.length; i += 100) {
+      const { error } = await db.from("legacy_records").upsert(rows.slice(i, i + 100), { onConflict: "company_id,module,legacy_ref" });
+      if (error) erros.push(error.message); else ok += Math.min(100, rows.length - i);
+    }
   } else {
     return NextResponse.json({ erro: "tipo desconhecido" }, { status: 400, headers: CORS });
   }

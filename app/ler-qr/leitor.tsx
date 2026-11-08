@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 // Só aceita QR no formato das nossas etiquetas: .../e/<código>
 const PADRAO = new RegExp(`/e/(${UUID})/?$`, "i");
+const PADRAO_TAG = /\/p\/[a-z0-9-]+\/([^/?#]+)\/?$/i;
 
 export default function Leitor() {
   const router = useRouter();
@@ -23,10 +24,13 @@ export default function Leitor() {
     let stream: MediaStream | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    async function abrirFicha(token: string) {
+    async function abrirFicha(token: string, porTag = false) {
       setMsg("QR lido. Procurando o equipamento…");
       const supabase = createClient();
-      const { data } = await supabase.from("equipment").select("id").eq("qr_token", token).maybeSingle();
+      const q = supabase.from("equipment").select("id");
+      const { data } = porTag
+        ? await q.eq("asset_tag", token).neq("status", "inactive").limit(1).maybeSingle()
+        : await q.eq("qr_token", token).maybeSingle();
       if (data?.id) {
         router.push(`/equipamentos/${data.id}`);
       } else {
@@ -54,6 +58,12 @@ export default function Leitor() {
             if (m) {
               parar = true;
               abrirFicha(m[1].toLowerCase());
+              return;
+            }
+            const t = r.data.match(PADRAO_TAG);
+            if (t) {
+              parar = true;
+              abrirFicha(decodeURIComponent(t[1]), true);
               return;
             }
             setMsg("QR não reconhecido. Use a etiqueta colada na impressora.");

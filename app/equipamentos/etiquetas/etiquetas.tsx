@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 
-type Item = { id: string; code: string; marca: string; serie: string; token: string; cliente: string };
+type Item = { id: string; code: string; marca: string; serie: string; token: string; tag: string; cliente: string };
 
 function fmtFone(n: string) {
   let d = (n || "").replace(/\D/g, "");
@@ -13,7 +13,7 @@ function fmtFone(n: string) {
   return n;
 }
 
-export default function Etiquetas({ itens, whatsapp, empresa }: { itens: Item[]; whatsapp: string; empresa: string }) {
+export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: Item[]; whatsapp: string; empresa: string; slug: string }) {
   const [sel, setSel] = useState<Set<string>>(new Set(itens.map((i) => i.id)));
   const [qrs, setQrs] = useState<Record<string, string>>({});
 
@@ -25,14 +25,14 @@ export default function Etiquetas({ itens, whatsapp, empresa }: { itens: Item[];
     (async () => {
       const novo: Record<string, string> = {};
       for (const i of escolhidos) {
-        novo[i.id] = await QRCode.toDataURL(`${base}/e/${i.token}`, { width: 700, margin: 0, errorCorrectionLevel: "M" });
+        novo[i.id] = await QRCode.toDataURL(i.tag && slug ? `${base}/p/${slug}/${encodeURIComponent(i.tag)}` : `${base}/e/${i.token}`, { width: 700, margin: 0, errorCorrectionLevel: "M" });
       }
       if (vivo) setQrs(novo);
     })();
     return () => {
       vivo = false;
     };
-  }, [escolhidos]);
+  }, [escolhidos, slug]);
 
   function alterna(id: string) {
     const n = new Set(sel);
@@ -67,7 +67,7 @@ export default function Etiquetas({ itens, whatsapp, empresa }: { itens: Item[];
             <label key={i.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={sel.has(i.id)} onChange={() => alterna(i.id)} />
               <span>
-                <strong>{i.code}</strong> — {i.marca || "sem modelo"} {i.serie && `· série ${i.serie}`}
+                <strong>{i.tag ? `Patrimônio ${i.tag}` : i.code}</strong> — {i.marca || "sem modelo"} {i.serie && `· série ${i.serie}`}
                 {i.cliente && <span className="muted"> · {i.cliente}</span>}
               </span>
             </label>
@@ -84,7 +84,7 @@ export default function Etiquetas({ itens, whatsapp, empresa }: { itens: Item[];
                 <img src="/logo-infor.jpg" alt={empresa || "Infor Cartuchos"} className="etq-logo" />
                 <div className="etq-cta">Escaneie para ver o histórico ou pedir manutenção</div>
                 {qrs[i.id] ? <img src={qrs[i.id]} alt={`QR ${i.code}`} className="etq-qr" /> : <div className="etq-qr" />}
-                <div className="etq-code">{i.code}</div>
+                <div className="etq-code">{i.tag ? `Patrimônio ${i.tag}` : i.code}</div>
                 {i.marca && <div className="etq-linha">{i.marca}</div>}
                 {i.serie && <div className="etq-linha">Série: {i.serie}</div>}
                 {whatsapp && <div className="etq-zap">WhatsApp {fmtFone(whatsapp)}</div>}

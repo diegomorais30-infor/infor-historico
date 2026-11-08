@@ -10,6 +10,7 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
 
   const { data: e } = await supabase.from("equipment").select("*,clients(name)").eq("id", id).single();
   if (!e) notFound();
+  const { data: emp } = await supabase.from("companies").select("slug").maybeSingle();
 
   const { data: manutencoes } = await supabase
     .from("maintenance")
@@ -57,7 +58,7 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
             <span className="badge">{STATUS_EQUIPAMENTO[e.status] ?? e.status}</span>
           </div>
         </div>
-        <QR code={e.code} token={e.qr_token} />
+        <QR code={e.code} token={e.qr_token} tag={e.asset_tag} slug={(emp as any)?.slug ?? null} />
       </div>
 
       <div className="grid g4">

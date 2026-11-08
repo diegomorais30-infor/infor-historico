@@ -19,10 +19,11 @@ async function criar(formData: FormData) {
   }
   if (cfg.tabela === "stock_movements") {
     const motivo = cfg.slug === "consumo-interno" ? "consumo_interno" : linha.reason;
-    const q = Math.abs(Number(linha.quantity));
+    const original = Number(linha.quantity);
+    const q = Math.abs(original);
     linha.reason = motivo;
     linha.quantity = motivo === "saida" || motivo === "consumo_interno" ? -q : q; // ajuste usa o sinal digitado
-    if (motivo === "ajuste") linha.quantity = Number(linha.quantity);
+    if (motivo === "ajuste") linha.quantity = original; // ajuste aceita sinal negativo
   }
   const { error } = await supabase.from(cfg.tabela).insert(linha);
   if (error) redirect(`/cadastros/${cfg.slug}?erro=` + encodeURIComponent(error.message));

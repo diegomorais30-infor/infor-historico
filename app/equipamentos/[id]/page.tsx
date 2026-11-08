@@ -2,11 +2,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import { STATUS_EQUIPAMENTO, TIPOS_MANUTENCAO, fmtData } from "@/lib/format";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { podeEditar } from "@/lib/permissoes";
 import QR from "./qr";
+
+async function removerPatrimonio(formData: FormData) {
+  "use server";
+  const id = String(formData.get("id"));
+  const supabase = await createClient();
+  await supabase.from("equipment").update({ asset_tag: null }).eq("id", id);
+  revalidatePath(`/equipamentos/${id}`);
+  redirect(`/equipamentos/${id}`);
+}
 
 export default async function DetalheEquipamento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase } = await getContexto();
+  const { supabase, perfil } = await getContexto();
+  const editar = podeEditar(perfil?.role, perfil?.permissions, "equipamentos");
 
   const { data: e } = await supabase.from("equipment").select("*,clients(name)").eq("id", id).single();
   if (!e) notFound();
@@ -69,6 +83,12 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
         <div className="card">
           <div className="muted">Patrimônio</div>
           <b>{e.asset_tag ?? "—"}</b>
+          {editar && e.asset_tag ? (
+            <form action={removerPatrimonio} style={{ marginTop: 6 }}>
+              <input type="hidden" name="id" value={e.id} />
+              <button className="btn secondary" type="submit">Remover patrimônio</button>
+            </form>
+          ) : null}
         </div>
         <div className="card">
           <div className="muted">Instalação</div>

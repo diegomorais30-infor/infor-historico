@@ -42,21 +42,57 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     perms = (data as any)?.permissions ?? {};
   }
 
+  const v = (a: string) => podeVer(papel, perms, a as any);
+  const M = (href: string, nome: string, icone: string, ok: boolean, extra: Partial<ItemMenu> = {}) => ok && ({ href, nome, icone, ...extra } as ItemMenu);
   const itens: ItemMenu[] = user
     ? ([
-        { href: "/dashboard", nome: "Início", icone: "🏠" },
-        podeVer(papel, perms, "chamados") && { href: "/chamados", nome: "Chamados", icone: "📩", badge: abertos },
-        podeVer(papel, perms, "os") && { href: "/os", nome: "Ordens de serviço", icone: "🛠️" },
-        podeVer(papel, perms, "os") && { href: "/servicos", nome: "Serviços", icone: "🧰" },
-        podeVer(papel, perms, "clientes") && { href: "/clientes", nome: "Clientes", icone: "👥" },
-        podeVer(papel, perms, "equipamentos") && { href: "/equipamentos", nome: "Equipamentos", icone: "🖨️" },
-        podeVer(papel, perms, "equipamentos") && { href: "/ler-qr", nome: "Ler QR", icone: "📷" },
-        podeVer(papel, perms, "contratos") && { href: "/contratos", nome: "Contratos", icone: "📄" },
-        podeVer(papel, perms, "leituras") && { href: "/leituras", nome: "Leituras", icone: "📊" },
-        podeVer(papel, perms, "pecas") && { href: "/estoque", nome: "Estoque", icone: "📦" },
-        podeVer(papel, perms, "financeiro") && { href: "/financeiro", nome: "Financeiro", icone: "💰" },
-        podeVer(papel, perms, "financeiro") && { href: "/fornecedores", nome: "Fornecedores", icone: "🚚" },
-        papel === "admin" && { href: "/usuarios", nome: "Usuários", icone: "⚙️" },
+        M("/dashboard", "Início", "🏠", true),
+        M("/modulo/tarefas", "Tarefas", "✅", true),
+        M("/chamados", "Chamados", "📩", v("chamados"), { badge: abertos }),
+        M("/clientes", "Clientes", "👥", v("clientes")),
+        M("/fornecedores", "Fornecedores", "🚚", v("financeiro")),
+        M("/equipamentos", "Equipamentos", "🖨️", v("equipamentos")),
+        M("/ler-qr", "Ler QR / etiquetas", "📷", v("equipamentos")),
+        M("/servicos", "Serviços", "🧰", v("os")),
+        // Produtos
+        M("/estoque", "Cadastrados", "📦", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/modulo/kits", "Kits", "🧩", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/modulo/movimentacao", "Movimentação", "🔁", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/modulo/consumo-interno", "Consumo interno", "🧴", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/modulo/grupos", "Grupos", "🗂️", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/modulo/listas-de-precos", "Listas de preços", "🏷️", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/modulo/compras", "Compras", "🛒", v("pecas")),
+        M("/modulo/orcamentos", "Orçamentos", "📝", v("os")),
+        // Ordens de serviço
+        M("/os", "Todas / trabalhando", "🛠️", v("os"), { grupo: "Ordens de serviço", sub: true }),
+        M("/os?status=entrada", "Entrada", "📥", v("os"), { grupo: "Ordens de serviço", sub: true }),
+        M("/os?status=orcamento", "Orçamento", "📝", v("os"), { grupo: "Ordens de serviço", sub: true }),
+        M("/os?status=aberto", "Aberto", "🟢", v("os"), { grupo: "Ordens de serviço", sub: true }),
+        M("/os?status=andamento", "Andamento", "🔧", v("os"), { grupo: "Ordens de serviço", sub: true }),
+        M("/os?status=concluido", "Concluído", "✔️", v("os"), { grupo: "Ordens de serviço", sub: true }),
+        M("/os?status=faturado", "Faturado", "💵", v("os"), { grupo: "Ordens de serviço", sub: true }),
+        M("/modulo/garantias", "Garantias", "🛡️", v("os")),
+        M("/contratos", "Contratos de locação", "📄", v("contratos")),
+        M("/leituras", "Leituras", "📊", v("leituras")),
+        M("/modulo/vendas", "Vendas", "🧾", v("financeiro")),
+        // Financeiro
+        M("/financeiro", "Faturas / lançamentos", "💰", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/modulo/transferencias", "Transferências", "↔️", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/modulo/extratos", "Extratos", "📃", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/financeiro/fluxo", "Fluxo de caixa", "📈", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/modulo/dre", "DRE", "📑", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/modulo/metricas", "Métricas", "📊", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/modulo/comissoes", "Comissões", "🤝", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/modulo/notas-fiscais", "Notas fiscais", "🧮", v("financeiro")),
+        M("/modulo/relatorios", "Relatórios", "🗒️", true),
+        // Configurações
+        M("/usuarios", "Usuários e permissões", "⚙️", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/modulo/emitente", "Emitente / filiais", "🏢", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/modulo/termos", "Termos de garantia", "📜", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/modulo/checklist", "Checklist", "☑️", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/modulo/tags", "Tags", "🔖", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/modulo/parametros", "Parâmetros", "🎛️", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/modulo/painel-de-gestao", "Painel de gestão", "🧭", papel === "admin"),
       ].filter(Boolean) as ItemMenu[])
     : [];
 

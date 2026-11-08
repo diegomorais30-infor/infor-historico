@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-export type ItemMenu = { href: string; nome: string; icone: string; badge?: number };
+export type ItemMenu = { href: string; nome: string; icone: string; badge?: number; grupo?: string; sub?: boolean };
 
 export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,16 +19,20 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
         </button>
       </div>
       <nav className="side-nav" onClick={() => setAberto(false)}>
-        {itens.map((i) => {
+        {itens.map((i, idx) => {
           const ativo = pathname === i.href || pathname.startsWith(i.href + "/");
+          const cab = i.grupo && itens[idx - 1]?.grupo !== i.grupo ? <div key={"g" + i.grupo} className="side-grupo">{i.grupo}</div> : null;
           return (
-            <Link key={i.href} href={i.href} className={ativo ? "ativo" : ""}>
+            <span key={i.href + idx} style={{ display: "contents" }}>
+            {cab}
+            <Link href={i.href} className={(ativo ? "ativo" : "") + (i.sub ? " sub" : "")}>
               <span className="ico" aria-hidden>
                 {i.icone}
               </span>
               <span>{i.nome}</span>
               {!!i.badge && <span className="pill">{i.badge}</span>}
             </Link>
+            </span>
           );
         })}
       </nav>

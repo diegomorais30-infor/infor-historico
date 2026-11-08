@@ -75,6 +75,8 @@ form.inline input[type=number]{width:90px}
 .side-nav a:hover{background:var(--soft)}
 .side-nav a.ativo{background:var(--blue);color:#fff}
 .side-nav .ico{width:22px;text-align:center}
+.side-grupo{margin:12px 12px 4px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#6b7280)}
+.side-nav a.sub{padding:7px 12px 7px 28px;font-weight:600;font-size:14px}
 .pill{margin-left:auto;background:#e5484d;color:#fff;border-radius:999px;font-size:12px;padding:1px 8px}
 .conteudo{flex:1;min-width:0}
 .userbar{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:10px 24px;border-bottom:1px solid var(--line);font-size:13px}

@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const itens: ItemMenu[] = user
     ? ([
         M("/dashboard", "Início", "🏠", true),
-        M("/modulo/tarefas", "Tarefas", "✅", true),
+        M("/cadastros/tarefas", "Tarefas", "✅", true),
         M("/chamados", "Chamados", "📩", v("chamados"), { badge: abertos }),
         M("/clientes", "Clientes", "👥", v("clientes")),
         M("/fornecedores", "Fornecedores", "🚚", v("financeiro")),
@@ -57,11 +57,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/servicos", "Serviços", "🧰", v("os")),
         // Produtos
         M("/estoque", "Cadastrados", "📦", v("pecas"), { grupo: "Produtos", sub: true }),
-        M("/modulo/kits", "Kits", "🧩", v("pecas"), { grupo: "Produtos", sub: true }),
-        M("/modulo/movimentacao", "Movimentação", "🔁", v("pecas"), { grupo: "Produtos", sub: true }),
-        M("/modulo/consumo-interno", "Consumo interno", "🧴", v("pecas"), { grupo: "Produtos", sub: true }),
-        M("/modulo/grupos", "Grupos", "🗂️", v("pecas"), { grupo: "Produtos", sub: true }),
-        M("/modulo/listas-de-precos", "Listas de preços", "🏷️", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/cadastros/kits", "Kits", "🧩", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/cadastros/movimentacao", "Movimentação", "🔁", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/cadastros/consumo-interno", "Consumo interno", "🧴", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/cadastros/grupos", "Grupos", "🗂️", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/cadastros/listas-de-precos", "Listas de preços", "🏷️", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/modulo/compras", "Compras", "🛒", v("pecas")),
         M("/modulo/orcamentos", "Orçamentos", "📝", v("os")),
         // Ordens de serviço
@@ -78,22 +78,22 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/vendas", "Vendas", "🧾", v("financeiro")),
         // Financeiro
         M("/financeiro", "Faturas / lançamentos", "💰", v("financeiro"), { grupo: "Financeiro", sub: true }),
-        M("/modulo/transferencias", "Transferências", "↔️", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/cadastros/transferencias", "Transferências", "↔️", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/extratos", "Extratos", "📃", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/financeiro/fluxo", "Fluxo de caixa", "📈", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/dre", "DRE", "📑", v("financeiro"), { grupo: "Financeiro", sub: true }),
-        M("/modulo/metricas", "Métricas", "📊", v("financeiro"), { grupo: "Financeiro", sub: true }),
-        M("/modulo/comissoes", "Comissões", "🤝", v("financeiro"), { grupo: "Financeiro", sub: true }),
-        M("/modulo/notas-fiscais", "Notas fiscais", "🧮", v("financeiro")),
-        M("/modulo/relatorios", "Relatórios", "🗒️", true),
+        M("/metricas", "Métricas", "📊", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/comissoes", "Comissões", "🤝", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/notas-fiscais", "Notas fiscais", "🧮", v("financeiro")),
+        M("/relatorios", "Relatórios", "🗒️", true),
         // Configurações
         M("/usuarios", "Usuários e permissões", "⚙️", papel === "admin", { grupo: "Configurações", sub: true }),
-        M("/modulo/emitente", "Emitente / filiais", "🏢", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/emitente", "Emitente / filiais", "🏢", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/modulo/termos", "Termos de garantia", "📜", papel === "admin", { grupo: "Configurações", sub: true }),
-        M("/modulo/checklist", "Checklist", "☑️", papel === "admin", { grupo: "Configurações", sub: true }),
-        M("/modulo/tags", "Tags", "🔖", papel === "admin", { grupo: "Configurações", sub: true }),
-        M("/modulo/parametros", "Parâmetros", "🎛️", papel === "admin", { grupo: "Configurações", sub: true }),
-        M("/modulo/painel-de-gestao", "Painel de gestão", "🧭", papel === "admin"),
+        M("/cadastros/checklist", "Checklist", "☑️", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/cadastros/tags", "Tags", "🔖", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/emitente", "Parâmetros", "🎛️", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/metricas", "Painel de gestão", "🧭", papel === "admin"),
       ].filter(Boolean) as ItemMenu[])
     : [];
 

@@ -12,6 +12,9 @@ const LEGADO: Record<string, { modulo: string; ordem: string; cols: Col[] }> = {
   garantias: { modulo: "garantias", ordem: "dataGarantia", cols: [
     { t: "Nº", f: (d) => "#" + d.idGarantias }, { t: "Referência", f: (d) => String(d.refGarantia ?? "") }, { t: "Prazo (dias)", f: (d) => String(d.prazo_garantia ?? "") }, { t: "Texto", f: (d) => String(d.textoGarantia ?? "").replace(/<[^>]+>/g, " ").slice(0, 300) },
   ] },
+  termos: { modulo: "garantias", ordem: "dataGarantia", cols: [
+    { t: "Nº", f: (d) => "#" + d.idGarantias }, { t: "Termo", f: (d) => String(d.refGarantia ?? "") }, { t: "Prazo (dias)", f: (d) => String(d.prazo_garantia ?? "") }, { t: "Texto", f: (d) => String(d.textoGarantia ?? "").replace(/<[^>]+>/g, " ").slice(0, 600) },
+  ] },
   orcamentos: { modulo: "orcamentos", ordem: "created_at", cols: [
     { t: "Nº", f: (d) => "#" + d.numero }, { t: "Data", f: (d) => fmtData(d.created_at) }, { t: "Cliente", f: (d) => String(d.cliente_display ?? d.nomeCliente ?? d.lead_nome ?? "") },
     { t: "Título", f: (d) => String(d.titulo ?? d.resumo ?? "") }, { t: "Status", f: (d) => String(d.status ?? "") }, { t: "Total", f: (d) => moeda(Number(d.valorTotal)) },

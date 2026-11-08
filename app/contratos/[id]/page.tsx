@@ -1,3 +1,4 @@
+import { linkWhats } from "@/lib/whatsapp";
 import { podeEditar } from "@/lib/permissoes";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -94,7 +95,7 @@ export default async function DetalheContrato({
   const { supabase, perfil } = await getContexto();
   const gerente = podeEditar(perfil?.role, (perfil as any)?.permissions, "contratos");
 
-  const { data: c } = await supabase.from("contracts").select("*, clients(name)").eq("id", id).single();
+  const { data: c } = await supabase.from("contracts").select("*, clients(name, phone, mobile)").eq("id", id).single();
   if (!c) notFound();
 
   const [{ data: instaladas }, { data: livres }, { data: faturas }] = await Promise.all([
@@ -277,6 +278,12 @@ export default async function DetalheContrato({
                   <span className={f.status === "paid" ? "badge" : "badge warn"}>{STATUS_FATURA[f.status]}</span>
                 </td>
                 <td>
+                  {f.status === "open" && linkWhats(c.clients?.mobile || c.clients?.phone, `Olá, ${c.clients?.name}! Segue o fechamento da locação de ${mesRotulo(f.reference_month)}: ${f.pages_bw} páginas P&B e ${f.pages_color} coloridas, total de ${moeda(f.total)} com vencimento em ${fmtData(f.due_date)}. Qualquer dúvida estamos à disposição. Infor Cartuchos`) && (
+                    <a className="btn secondary" target="_blank" rel="noreferrer" style={{ marginRight: 6 }}
+                      href={linkWhats(c.clients?.mobile || c.clients?.phone, `Olá, ${c.clients?.name}! Segue o fechamento da locação de ${mesRotulo(f.reference_month)}: ${f.pages_bw} páginas P&B e ${f.pages_color} coloridas, total de ${moeda(f.total)} com vencimento em ${fmtData(f.due_date)}. Qualquer dúvida estamos à disposição. Infor Cartuchos`)!}>
+                      Enviar por WhatsApp
+                    </a>
+                  )}
                   {gerente && f.status === "open" && (
                     <form action={marcarPaga}>
                       <input type="hidden" name="contrato" value={id} />

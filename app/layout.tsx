@@ -59,11 +59,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/estoque", "Cadastrados", "📦", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/cadastros/kits", "Kits", "🧩", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/cadastros/movimentacao", "Movimentação", "🔁", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/modulo/historico-estoque", "Histórico (Inforos)", "🕘", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/cadastros/consumo-interno", "Consumo interno", "🧴", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/cadastros/grupos", "Grupos", "🗂️", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/cadastros/listas-de-precos", "Listas de preços", "🏷️", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/modulo/compras", "Compras", "🛒", v("pecas")),
         M("/modulo/orcamentos", "Orçamentos", "📝", v("os")),
+        M("/modulo/modelos-orcamento", "Modelos de orçamento", "📄", v("os"), { grupo: "Orçamentos", sub: true }),
         // Ordens de serviço
         M("/os", "Todas / trabalhando", "🛠️", v("os"), { grupo: "Ordens de serviço", sub: true }),
         M("/os?status=entrada", "Entrada", "📥", v("os"), { grupo: "Ordens de serviço", sub: true }),

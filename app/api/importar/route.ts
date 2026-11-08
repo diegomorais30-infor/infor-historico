@@ -33,6 +33,10 @@ export async function POST(req: NextRequest) {
     for (const r of registros) {
       const id = String(r.idClientes);
       if (ehForn.has(id)) { ignorados++; continue; }
+      if (String(r.tipo) === "fornecedor") {
+        await db.from("suppliers").upsert({ company_id: EMPRESA, legacy_ref: id, name: s(r.nomeCliente) ?? "(sem nome)", document: s(r.documento), phone: s(r.telefone) ?? s(r.celular), email: s(r.email), contact_name: s(r.responsavel), address: [s(r.rua), s(r.numero), s(r.bairro)].filter(Boolean).join(", ") || null, city: s(r.cidade), state: s(r.estado), notes: s(r.observacoes), active: String(r.ativo) !== "0" }, { onConflict: "company_id,legacy_ref" });
+        ignorados++; continue;
+      }
       linhas.push({
         company_id: EMPRESA,
         legacy_ref: id,
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
         municipal_registration: s(r.inscricaoMunicipal),
         municipal_code: s(r.codigoMunicipio),
         iss_retido: r.issRetido === null || r.issRetido === undefined ? null : String(r.issRetido) === "1",
-        is_contract: String(r.tipo ?? "").toUpperCase().startsWith("C"),
+        is_contract: String(r.tipo ?? "") === "contrato",
         registered_at: dt(r.dataCadastro ? r.dataCadastro + "T00:00:00-03:00" : null),
         active: String(r.ativo) !== "0",
         legacy_data: r,

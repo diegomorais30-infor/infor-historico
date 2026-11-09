@@ -120,7 +120,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
 
       <nav className="tabs" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
         {abas.map((a) => (
-          <Link key={a} href={`/estoque?aba=${encodeURIComponent(a)}`} className={`btn ${a === abaAtual && !busca ? "primary" : "secondary"}`}>
+          <Link key={a} href={`/estoque?aba=${encodeURIComponent(a)}`} title={a} className={`btn aba ${a === abaAtual && !busca ? "primary" : "secondary"}`}>
             {a} ({contagem(a)})
           </Link>
         ))}

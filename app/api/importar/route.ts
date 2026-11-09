@@ -73,7 +73,21 @@ export async function POST(req: NextRequest) {
     if (error) erros.push(error.message); else ok = linhas.length;
   } else if (tipo === "equipamentos") {
     // atualiza campos completos dos equipamentos já importados
+    const { data: cls0 } = await db.from("clients").select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null);
+    const mc0 = new Map((cls0 ?? []).map((c: any) => [String(c.legacy_ref), c.id]));
     for (const r of registros) {
+      const { data: jaTem } = await db.from("equipment").select("id").eq("company_id", EMPRESA).eq("legacy_ref", String(r.idEquipamentos)).maybeSingle();
+      if (!jaTem) {
+        const cid = mc0.get(String(r.clientes_id ?? r.idClientes));
+        if (!cid) { erros.push(`equip ${r.idEquipamentos}: cliente ${r.clientes_id} não encontrado`); continue; }
+        const { error: ei } = await db.from("equipment").insert({
+          company_id: EMPRESA, legacy_ref: String(r.idEquipamentos), client_id: cid, equipment_type: s(r.equipamento), brand: s(r.marca), model: s(r.modelo),
+          serial_number: s(r.serial_number), asset_tag: s(r.num_serie), status: "active", notes: s(r.cor) ? `Cor: ${s(r.cor)}` : s(r.observacoes),
+          color: s(r.cor), voltage: s(r.voltagem) ?? s(r.tensao), power: s(r.potencia), manufactured_at: dt(r.data_fabricacao), legacy_data: r,
+        });
+        if (ei) erros.push(`equip ${r.idEquipamentos}: ${ei.message}`); else ok++;
+        continue;
+      }
       const { error } = await db.from("equipment").update({
         color: s(r.cor),
         voltage: s(r.voltagem) ?? s(r.tensao),

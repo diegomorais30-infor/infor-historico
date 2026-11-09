@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Zap from "@/components/zap";
 import { getContexto } from "@/lib/contexto";
 
 export default async function Clientes({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -38,7 +39,7 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
                 <td><Link href={`/clientes/${c.id}`}><b>{c.name}</b></Link>{c.trade_name ? <div className="muted">{c.trade_name}</div> : null}</td>
                 <td>{c.document || "-"}</td>
                 <td>{c.contact_name || "-"}</td>
-                <td>{[c.phone, c.mobile].filter(Boolean).join(" / ") || "-"}</td>
+                <td>{[c.phone, c.mobile].filter(Boolean).join(" / ") || "-"}<Zap telefone={c.mobile || c.phone} mensagem={`Olá, ${c.name}! Aqui é da Infor Cartuchos.`} /></td>
                 <td>{c.email || "-"}</td>
                 <td>{[c.city, c.state].filter(Boolean).join("/") || "-"}</td>
               </tr>

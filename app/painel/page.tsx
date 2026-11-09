@@ -32,7 +32,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
     tudo(() => supabase.from("finance_entries").select("kind,amount,paid_at,category,payment_method").gte("paid_at", `${meses[0]}-01`).order("id")),
     tudo(() => supabase.from("finance_entries").select("kind,amount,due_date").is("paid_at", null).order("id")),
     tudo(() => supabase.from("sales").select("sold_at,total,client_id,clients(name)").gte("sold_at", `${meses[0]}-01`).order("id")),
-    tudo(() => supabase.from("service_orders").select("id,status,entry_at,closed_at,technician_id,clients(name)").order("id")),
+    tudo(() => supabase.from("service_orders").select("id,status,entry_at,closed_at,technician_id,vt:legacy_data->lista->>valorTotal,vp:legacy_data->lista->>valorProdutos,vs:legacy_data->lista->>valorServicos,clients(name)").order("id")),
     supabase.from("profiles").select("id,full_name"),
   ]);
   const nomePessoa = (id: string | null) => ((pessoas.data as any[]) ?? []).find((p) => p.id === id)?.full_name ?? "Sem técnico";
@@ -54,23 +54,27 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
 
   const osAbertas = (m: string) => os.filter((o: any) => mesDe(o.entry_at) === m).length;
   const osFechadas = (m: string) => os.filter((o: any) => mesDe(o.closed_at) === m).length;
-  const osMesFechadas = os.filter((o: any) => mesDe(o.closed_at) === M && o.status !== "cancelado");
-
-  // Faturado em OS: itens (qtd x preço) das OS fechadas no mês
-  let faturadoOS = 0;
-  const ids = osMesFechadas.map((o: any) => o.id);
-  const porTecnico: Record<string, number> = {};
-  for (const o of osMesFechadas) { const n = nomePessoa(o.technician_id); porTecnico[n] = (porTecnico[n] ?? 0) + 1; }
-  for (let i = 0; i < ids.length; i += 150) {
-    const { data: itens } = await supabase.from("service_order_items").select("id,quantity").in("order_id", ids.slice(i, i + 150));
+  // Como no Inforos: faturado = valor das OS "Finalizado" no mês; ticket médio = faturado / quantidade de finalizadas
+  const osMesFechadas = os.filter((o: any) => mesDe(o.closed_at) === M && o.status === "finalizado");
+  let faturadoOS = 0, vendaPecas = 0, vendaServicos = 0;
+  const semValor: any[] = [];
+  for (const o of osMesFechadas) {
+    if (o.vt === null || o.vt === undefined) { semValor.push(o); continue; }
+    faturadoOS += Number(o.vt) || 0; vendaPecas += Number(o.vp) || 0; vendaServicos += Number(o.vs) || 0;
+  }
+  // OS criadas direto no InforGest (sem dados do Inforos): soma dos itens (quantidade x preço)
+  for (let i = 0; i < semValor.length; i += 150) {
+    const { data: itens } = await supabase.from("service_order_items").select("id,kind,quantity").in("order_id", semValor.slice(i, i + 150).map((o: any) => o.id));
     const lista = (itens as any[]) ?? [];
     for (let j = 0; j < lista.length; j += 150) {
       const parte = lista.slice(j, j + 150);
       const { data: precos } = await supabase.from("item_prices").select("item_id,unit_price").in("item_id", parte.map((x) => x.id));
       const mapa = new Map(((precos as any[]) ?? []).map((p) => [p.item_id, Number(p.unit_price)]));
-      for (const it of parte) faturadoOS += Number(it.quantity) * (mapa.get(it.id) ?? 0);
+      for (const it of parte) { const v = Number(it.quantity) * (mapa.get(it.id) ?? 0); faturadoOS += v; if (it.kind === "peca") vendaPecas += v; else vendaServicos += v; }
     }
   }
+  const porTecnico: Record<string, number> = {};
+  for (const o of osMesFechadas) { const n = nomePessoa(o.technician_id); porTecnico[n] = (porTecnico[n] ?? 0) + 1; }
   const ticket = osMesFechadas.length ? faturadoOS / osMesFechadas.length : 0;
 
   const agrupa = (l: any[], campo: string, vazio: string) => {
@@ -111,8 +115,10 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
         <Indicador titulo="Vendas" valor={moeda(totalVendas)} sub={`${vendasMes.length} venda(s)`} cor="#ff9f43" href="/vendas" />
         <Indicador titulo="A receber (vence no mês)" valor={moeda(aReceber)} cor="#4ea1ff" href="/financeiro" />
         <Indicador titulo="A pagar (vence no mês)" valor={moeda(aPagar)} cor="#f6c500" href="/financeiro" />
-        <Indicador titulo="Faturado em OS" valor={moeda(faturadoOS)} sub={`${osMesFechadas.length} OS fechada(s)`} cor="#b48cff" href="/os" />
-        <Indicador titulo="Ticket médio por OS" valor={moeda(ticket)} cor="#5fd0e0" />
+        <Indicador titulo="Faturado em OS" valor={moeda(faturadoOS)} sub={`${osMesFechadas.length} OS finalizada(s)`} cor="#b48cff" href="/os" />
+        <Indicador titulo="Ticket médio por OS" valor={moeda(ticket)} sub="faturado ÷ OS finalizadas" cor="#5fd0e0" />
+        <Indicador titulo="Venda de peças (OS)" valor={moeda(vendaPecas)} cor="#3ccf91" />
+        <Indicador titulo="Venda de serviços (OS)" valor={moeda(vendaServicos)} cor="#4ea1ff" />
       </div>
 
       <div className="grid g2" style={{ marginBottom: 14 }}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Zap from "@/components/zap";
 import { getContexto } from "@/lib/contexto";
 import { fmtData, hojeBR } from "@/lib/format";
 import { COR_ATRASO, COR_OK, COR_PRIORIDADE, COR_STATUS_OS, corSituacao, ROTULO_PRIORIDADE, STATUS_OS } from "@/lib/os";
@@ -11,7 +12,7 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
 
   const { data } = await supabase
     .from("service_orders")
-    .select("id, number, status, priority, situacao, warranty, defect, deadline, entry_at, created_by, technician_id, clients(name), equipment(code, brand, model)")
+    .select("id, number, status, priority, situacao, warranty, defect, deadline, entry_at, created_by, technician_id, clients(name, phone, mobile), equipment(code, brand, model)")
     .order("number", { ascending: false })
     .limit(500);
   const todas: any[] = data ?? [];
@@ -119,7 +120,7 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
                     {o.warranty && <div className="badge">Garantia</div>}
                   </td>
                   <td>
-                    <div>{o.clients?.name ?? "—"}</div>
+                    <div>{o.clients?.name ?? "—"}<Zap telefone={o.clients?.mobile || o.clients?.phone} mensagem={`Olá, ${o.clients?.name}! Sobre a sua OS #${o.number} na Infor Cartuchos:`} /></div>
                     <div className="muted">
                       {o.equipment ? `${o.equipment.code} · ${o.equipment.brand ?? ""} ${o.equipment.model ?? ""}` : "Sem equipamento"}
                     </div>

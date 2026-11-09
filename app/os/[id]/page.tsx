@@ -1,3 +1,4 @@
+import Zap from "@/components/zap";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -177,7 +178,7 @@ export default async function DetalheOS({
 
   const { data: os } = await supabase
     .from("service_orders")
-    .select("*, clients(name, phone), equipment(id, code, brand, model, serial_number), service_requests(protocol)")
+    .select("*, clients(name, phone, mobile), equipment(id, code, brand, model, serial_number), service_requests(protocol)")
     .eq("id", id)
     .single();
   if (!os) notFound();
@@ -275,7 +276,7 @@ export default async function DetalheOS({
 
       <section className="card" style={{ marginBottom: 14 }}>
         <div>
-          <b>{o.clients?.name}</b> {o.clients?.phone && <span className="muted">· {o.clients.phone}</span>}
+          <b>{o.clients?.name}</b> {o.clients?.phone && <span className="muted">· {o.clients.phone}</span>}<Zap telefone={o.clients?.mobile || o.clients?.phone} mensagem={`Olá, ${o.clients?.name}! Sobre a sua OS #${o.number} na Infor Cartuchos:`} />
         </div>
         <div className="muted">
           {o.equipment ? (

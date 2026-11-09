@@ -144,7 +144,19 @@ export async function POST(req: NextRequest) {
           itens.push({ company_id: EMPRESA, order_id: os.id, kind, description: [s(it.nome), s(it.descritivo)].filter(Boolean).join(" — ") || "(sem descrição)", quantity: q > 0 ? q : 1 });
         }
       }
-      if (itens.length) { const { error: e2 } = await db.from("service_order_items").insert(itens); if (e2) erros.push(`OS ${ref} itens: ${e2.message}`); }
+      if (itens.length) {
+        const { data: criados, error: e2 } = await db.from("service_order_items").insert(itens).select("id");
+        if (e2) erros.push(`OS ${ref} itens: ${e2.message}`);
+        else {
+          // preço de cada item = subtotal / quantidade vindos do Inforos (o gatilho do banco só preenche pelo catálogo)
+          const origem = [...(d.itens?.produtos ?? []), ...(d.itens?.servicos ?? [])];
+          for (let k = 0; k < (criados ?? []).length; k++) {
+            const q = num(origem[k]?.quantidade) || 1;
+            const preco = num(origem[k]?.subTotal) / q;
+            await db.from("item_prices").update({ unit_price: preco }).eq("item_id", (criados as any[])[k].id);
+          }
+        }
+      }
       const desc = num(d.totais?.desconto ?? l.desconto), adi = num(d.totais?.adiantamento);
       if (desc || adi) await db.from("order_finance").upsert({ order_id: os.id, company_id: EMPRESA, discount: desc, advance: adi, payment_method: s(d.formasPagamento) }, { onConflict: "order_id" });
       ok++;

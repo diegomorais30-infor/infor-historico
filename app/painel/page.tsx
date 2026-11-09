@@ -94,7 +94,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
       <div className="headrow" style={{ marginBottom: 14 }}>
         <div>
           <h1 className="title">Painel de gestão</h1>
-          <p className="muted" style={{ textTransform: "capitalize" }}>{rotLongo(M)}</p>
+          <p className="muted">{rotLongo(M).replace(/^./, (c) => c.toUpperCase())}</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <Link className="btn secondary" href={`/painel?mes=${somaMes(M, -1)}`}>← {rot(somaMes(M, -1))}</Link>

@@ -104,7 +104,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         {user ? (
           <div className="shell">
-            <MenuLateral logo={<Logo size={46} />} itens={itens} />
+            <MenuLateral logo={<Logo size={60} />} itens={itens} />
             <div className="conteudo">
               <div className="userbar">
                 {empresa && <span className="muted">{empresa}</span>}

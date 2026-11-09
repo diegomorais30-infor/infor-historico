@@ -307,7 +307,7 @@ export default async function Dashboard() {
         </Link>
         <Link href="/contratos" className="card" style={{ textDecoration: "none", color: "inherit" }}>
           <div className="muted">Faturas vencidas</div>
-          <div className="stat" style={{ color: vencidas.length ? "#ffb4b4" : undefined }}>{vencidas.length}</div>
+          <div className="stat" style={{ color: vencidas.length ? "#d93025" : undefined }}>{vencidas.length}</div>
           <div className="muted" style={{ fontSize: 13 }}>{moeda(somaFat(vencidas))}</div>
         </Link>
         </>)}

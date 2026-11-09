@@ -1,4 +1,7 @@
-import { podeVer } from "@/lib/permissoes";
+import { podeEditar, podeVer } from "@/lib/permissoes";
+import { Barras, Rosca, Indicador } from "@/components/graficos";
+import { tudo } from "@/lib/paginar";
+import { COR_ATRASO, COR_OK, COR_PENDENTE, COR_PRIORIDADE, ROTULO_PRIORIDADE, STATUS_OS, corSituacao } from "@/lib/os";
 import Link from "next/link";
 import AvisosPush from "@/components/avisos-push";
 import { getContexto } from "@/lib/contexto";
@@ -59,6 +62,56 @@ export default async function Dashboard() {
 
   const gerente = podeVer((perfil as any)?.role, (perfil as any)?.permissions, "contratos");
   const empresa = (perfil as any)?.companies;
+  const role = (perfil as any)?.role;
+  const perms = (perfil as any)?.permissions;
+  const verOS = podeVer(role, perms, "os");
+  const verFin = podeVer(role, perms, "financeiro");
+
+  // ===== Blocos no estilo do Inforos =====
+  const mesAtual = hoje.slice(0, 7);
+  const mesesSeq = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(`${mesAtual}-15T12:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - (5 - i));
+    return d.toISOString().slice(0, 7);
+  });
+  const rotMes = (m: string) => `${m.slice(5)}/${m.slice(2, 4)}`;
+  const [osTodas, finPagos, finAbertos, vendasN, produtosN] = await Promise.all([
+    verOS ? tudo(() => supabase.from("service_orders").select("status,priority,situacao,deadline,entry_at,closed_at").order("id")) : Promise.resolve([] as any[]),
+    verFin ? tudo(() => supabase.from("finance_entries").select("kind,amount,paid_at").gte("paid_at", `${mesesSeq[0]}-01`).order("id")) : Promise.resolve([] as any[]),
+    verFin ? tudo(() => supabase.from("finance_entries").select("kind,amount,due_date").is("paid_at", null).order("id")) : Promise.resolve([] as any[]),
+    supabase.from("sales").select("*", { count: "exact", head: true }),
+    supabase.from("parts").select("*", { count: "exact", head: true }),
+  ]);
+  const encerrada = (o: any) => ["concluido", "faturado", "finalizado", "cancelado"].includes(o.status);
+  const abertasOS = (osTodas as any[]).filter((o) => !encerrada(o));
+  const amanha = new Date(new Date(`${hoje}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+  const faixa = (o: any) => (!o.deadline ? "sem" : o.deadline < hoje ? "vencidas" : o.deadline === hoje ? "hoje" : o.deadline === amanha ? "amanha" : "no_prazo");
+  const nPrazo = (f: string) => abertasOS.filter((o) => faixa(o) === f).length;
+  const nPrio = (l: string[]) => abertasOS.filter((o) => l.includes(o.priority)).length;
+  const situ: Record<string, number> = {};
+  for (const o of abertasOS) if (o.situacao) situ[o.situacao] = (situ[o.situacao] ?? 0) + 1;
+  const statusN: Record<string, number> = {};
+  for (const o of osTodas as any[]) statusN[o.status] = (statusN[o.status] ?? 0) + 1;
+  const mesDe = (ts: string | null) => (ts ? new Date(ts).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }).slice(0, 7) : "");
+  const osAbertasMes = mesesSeq.map((m) => (osTodas as any[]).filter((o) => mesDe(o.entry_at) === m).length);
+  const osFechadasMes = mesesSeq.map((m) => (osTodas as any[]).filter((o) => mesDe(o.closed_at) === m).length);
+  const somaPago = (k: string, m: string) =>
+    (finPagos as any[]).filter((l) => l.kind === k && mesDe(l.paid_at) === m).reduce((t, l) => t + Number(l.amount), 0);
+  const recM = somaPago("receita", mesAtual), desM = somaPago("despesa", mesAtual);
+  const aReceberT = (finAbertos as any[]).filter((l) => l.kind === "receita").reduce((t, l) => t + Number(l.amount), 0);
+  const aPagarT = (finAbertos as any[]).filter((l) => l.kind === "despesa").reduce((t, l) => t + Number(l.amount), 0);
+  const acoes = [
+    { href: "/os/nova", ico: "🛠️", nome: "Nova OS", ok: podeEditar(role, perms, "os") },
+    { href: "/os", ico: "📋", nome: "Ordens de serviço", ok: verOS },
+    { href: "/clientes/novo", ico: "👤", nome: "Novo cliente", ok: podeEditar(role, perms, "clientes") },
+    { href: "/equipamentos/novo", ico: "🖨️", nome: "Novo equipamento", ok: podeEditar(role, perms, "equipamentos") },
+    { href: "/modulo/orcamentos", ico: "📝", nome: "Orçamentos", ok: verOS },
+    { href: "/vendas", ico: "🧾", nome: "Vendas", ok: verFin },
+    { href: "/estoque", ico: "📦", nome: "Estoque", ok: podeVer(role, perms, "pecas") },
+    { href: "/financeiro", ico: "💰", nome: "Financeiro", ok: verFin },
+    { href: "/leituras", ico: "📊", nome: "Leituras", ok: podeVer(role, perms, "leituras") },
+    { href: "/ler-qr", ico: "📷", nome: "Ler QR Code", ok: true },
+  ].filter((a) => a.ok);
   const pecasBaixas = ((pecas as any[]) ?? []).filter((p) => Number(p.stock_quantity) <= Number(p.minimum_stock));
 
   // Métricas por dia (últimos 7 dias, hoje primeiro)
@@ -101,6 +154,126 @@ export default async function Dashboard() {
       </div>
 
       <AvisosPush />
+
+      {!!acoes.length && (
+        <section className="card" style={{ marginBottom: 14 }}>
+          <h2 style={{ margin: "0 0 10px" }}>Ações rápidas</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10 }}>
+            {acoes.map((a) => (
+              <Link key={a.href} href={a.href} className="btn secondary" style={{ textAlign: "center", padding: "14px 8px" }}>
+                <div style={{ fontSize: 24 }}>{a.ico}</div>
+                <div style={{ fontSize: 13, marginTop: 4 }}>{a.nome}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {verOS && (
+        <>
+          <div className="grid g4" style={{ marginBottom: 14 }}>
+            <section className="card">
+              <h3 style={{ margin: "0 0 8px" }}>Prazo</h3>
+              {[
+                ["Vencidas", "vencidas", COR_ATRASO],
+                ["Hoje", "hoje", COR_PENDENTE],
+                ["Amanhã", "amanha", "#4ea1ff"],
+                ["No prazo", "no_prazo", COR_OK],
+              ].map(([n, f, c]) => (
+                <Link key={f} href={`/os?prazo=${f}`} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid var(--line)" }}>
+                  <span><span style={{ color: c }}>●</span> {n}</span>
+                  <b>{nPrazo(f)}</b>
+                </Link>
+              ))}
+            </section>
+            <section className="card">
+              <h3 style={{ margin: "0 0 8px" }}>Prioridade</h3>
+              {[
+                ["alta", ["alta", "urgente"]],
+                ["normal", ["normal"]],
+                ["baixa", ["baixa"]],
+              ].map(([k, l]) => (
+                <Link key={k as string} href={`/os?prioridade=${k}`} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid var(--line)" }}>
+                  <span><span style={{ color: COR_PRIORIDADE[k as string] }}>●</span> {ROTULO_PRIORIDADE[k as string]}</span>
+                  <b>{nPrio(l as string[])}</b>
+                </Link>
+              ))}
+            </section>
+            <section className="card">
+              <h3 style={{ margin: "0 0 8px" }}>Situação</h3>
+              {Object.entries(situ).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([n, q]) => (
+                <Link key={n} href={`/os?situacao=${encodeURIComponent(n)}`} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--line)" }}>
+                  <span><span style={{ color: corSituacao(n) }}>●</span> {n}</span>
+                  <b>{q}</b>
+                </Link>
+              ))}
+              {!Object.keys(situ).length && <div className="muted">Nenhuma situação em uso.</div>}
+            </section>
+            <section className="card">
+              <h3 style={{ margin: "0 0 8px" }}>Status</h3>
+              {Object.entries(STATUS_OS).filter(([k]) => !["finalizado", "cancelado"].includes(k)).map(([k, n]) => (
+                <Link key={k} href={`/os?status=${k}`} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid var(--line)" }}>
+                  <span>{n}</span>
+                  <b>{statusN[k] ?? 0}</b>
+                </Link>
+              ))}
+            </section>
+          </div>
+
+          <div className="grid g2" style={{ marginBottom: 14 }}>
+            <section className="card">
+              <h3 style={{ margin: "0 0 8px" }}>Estatísticas de OS (6 meses)</h3>
+              <Barras
+                categorias={mesesSeq.map(rotMes)}
+                series={[
+                  { nome: "Abertas", cor: "#4ea1ff", valores: osAbertasMes },
+                  { nome: "Fechadas", cor: "#3ccf91", valores: osFechadasMes },
+                ]}
+              />
+            </section>
+            <section className="card">
+              <h3 style={{ margin: "0 0 8px" }}>OS por status</h3>
+              <Rosca itens={Object.entries(STATUS_OS).map(([k, n]) => ({ nome: n, valor: statusN[k] ?? 0 }))} />
+            </section>
+          </div>
+        </>
+      )}
+
+      {verFin && (
+        <div className="grid g2" style={{ marginBottom: 14 }}>
+          <section className="card">
+            <h3 style={{ margin: "0 0 8px" }}>Resumo financeiro · {rotMes(mesAtual)}</h3>
+            <div className="grid g2">
+              <Indicador titulo="Receitas pagas" valor={moeda(recM)} cor="#3ccf91" />
+              <Indicador titulo="Despesas pagas" valor={moeda(desM)} cor="#ff7a7a" />
+              <Indicador titulo="A receber" valor={moeda(aReceberT)} cor="#4ea1ff" href="/financeiro" />
+              <Indicador titulo="A pagar" valor={moeda(aPagarT)} cor="#f6c500" href="/financeiro" />
+            </div>
+          </section>
+          <section className="card">
+            <h3 style={{ margin: "0 0 8px" }}>Comparativo financeiro (6 meses)</h3>
+            <Barras
+              dinheiro
+              categorias={mesesSeq.map(rotMes)}
+              series={[
+                { nome: "Receitas", cor: "#3ccf91", valores: mesesSeq.map((m) => somaPago("receita", m)) },
+                { nome: "Despesas", cor: "#ff7a7a", valores: mesesSeq.map((m) => somaPago("despesa", m)) },
+              ]}
+            />
+          </section>
+        </div>
+      )}
+
+      <section className="card" style={{ marginBottom: 14 }}>
+        <h3 style={{ margin: "0 0 8px" }}>Estatísticas do sistema</h3>
+        <div className="grid g4">
+          <Indicador titulo="Clientes" valor={String(clCount ?? 0)} cor="#4ea1ff" href="/clientes" />
+          <Indicador titulo="Equipamentos" valor={String(eqCount ?? 0)} cor="#b48cff" href="/equipamentos" />
+          <Indicador titulo="Ordens de serviço" valor={String((osTodas as any[]).length)} cor="#f6c500" href="/os" />
+          <Indicador titulo="Produtos / peças" valor={String(produtosN.count ?? 0)} cor="#3ccf91" href="/estoque" />
+          {verFin && <Indicador titulo="Vendas" valor={String(vendasN.count ?? 0)} cor="#ff9f43" href="/vendas" />}
+        </div>
+      </section>
 
       <h2 style={{ margin: "0 0 10px" }}>Hoje · {fmtData(hoje)}</h2>
       <div className="grid g4">

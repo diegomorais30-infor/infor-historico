@@ -178,3 +178,12 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
   h2{font-size:16px}
   input,select,textarea{font-size:16px !important}
 }
+
+/* Campos soltos (sem .field) com o mesmo visual dos demais */
+.wrap input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]),.wrap select,.wrap textarea{
+  padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--input);color:var(--ink);font:inherit;font-size:13px
+}
+.wrap input:focus,.wrap select:focus,.wrap textarea:focus{outline:2px solid var(--blue);outline-offset:0}
+.wrap input::placeholder{color:#94a3b8}
+/* Abas com nome longo */
+.btn.aba{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

@@ -32,7 +32,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
     tudo(() => supabase.from("finance_entries").select("kind,amount,paid_at,category,payment_method").gte("paid_at", `${meses[0]}-01`).order("id")),
     tudo(() => supabase.from("finance_entries").select("kind,amount,due_date").is("paid_at", null).order("id")),
     tudo(() => supabase.from("sales").select("sold_at,total,client_id,clients(name)").gte("sold_at", `${meses[0]}-01`).order("id")),
-    tudo(() => supabase.from("service_orders").select("id,status,entry_at,closed_at,technician_id,vt:legacy_data->lista->>valorTotal,vp:legacy_data->lista->>valorProdutos,vs:legacy_data->lista->>valorServicos,clients(name)").order("id")),
+    tudo(() => supabase.from("service_orders").select("id,status,entry_at,closed_at,technician_id,vt:legacy_data->lista->>valorTotal,vp:legacy_data->lista->>valorProdutos,vs:legacy_data->lista->>valorServicos,vdp:legacy_data->lista->>valorDescProdutos,vds:legacy_data->lista->>valorDescServicos,clients(name)").order("id")),
     supabase.from("profiles").select("id,full_name"),
   ]);
   const nomePessoa = (id: string | null) => ((pessoas.data as any[]) ?? []).find((p) => p.id === id)?.full_name ?? "Sem técnico";
@@ -60,7 +60,7 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
   const semValor: any[] = [];
   for (const o of osMesFechadas) {
     if (o.vt === null || o.vt === undefined) { semValor.push(o); continue; }
-    faturadoOS += Number(o.vt) || 0; vendaPecas += Number(o.vp) || 0; vendaServicos += Number(o.vs) || 0;
+    faturadoOS += Number(o.vt) || 0; vendaPecas += (Number(o.vp) || 0) - (Number(o.vdp) || 0); vendaServicos += (Number(o.vs) || 0) - (Number(o.vds) || 0);
   }
   // OS criadas direto no InforGest (sem dados do Inforos): soma dos itens (quantidade x preço)
   for (let i = 0; i < semValor.length; i += 150) {

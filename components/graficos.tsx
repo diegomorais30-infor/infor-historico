@@ -3,9 +3,9 @@ import { moeda } from "@/lib/format";
 
 export const PALETA = ["#4ea1ff", "#f6c500", "#3ccf91", "#ff7a7a", "#b48cff", "#ff9f43", "#5fd0e0", "#9db0c9"];
 
-const TXT = "#e8eef7";
-const SUAVE = "#9db0c9";
-const GRADE = "#223c63";
+const TXT = "var(--ink)";
+const SUAVE = "var(--muted)";
+const GRADE = "var(--line)";
 
 const curto = (v: number) => {
   const a = Math.abs(v);
@@ -157,7 +157,7 @@ export function BarrasH({ itens, dinheiro = false, cor = "#4ea1ff" }: { itens: {
             <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nome}</span>
             <b>{dinheiro ? moeda(it.valor) : it.valor}</b>
           </div>
-          <div style={{ background: "#0c2140", borderRadius: 4, height: 8, marginTop: 3 }}>
+          <div style={{ background: "var(--soft)", borderRadius: 4, height: 8, marginTop: 3 }}>
             <div style={{ width: `${(it.valor / max) * 100}%`, background: cor, height: 8, borderRadius: 4 }} />
           </div>
         </div>

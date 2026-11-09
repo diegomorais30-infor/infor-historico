@@ -26,6 +26,8 @@ async function salvar(formData: FormData) {
       technician_id: texto("technician_id"),
       report: texto("report"),
       defect: texto("defect"),
+      quote_text: texto("quote_text"),
+      contact_name: texto("contact_name"),
       external_invoice_number: texto("external_invoice_number"),
     })
     .eq("id", id);
@@ -346,6 +348,14 @@ export default async function DetalheOS({
         <label className="field" style={{ gridColumn: "1/-1" }}>
           Defeito relatado
           <textarea name="defect" rows={2} defaultValue={o.defect ?? ""} disabled={!editar} />
+        </label>
+        <label className="field">
+          Solicitante (quem trouxe o equipamento)
+          <input name="contact_name" defaultValue={o.contact_name ?? ""} disabled={!editar} />
+        </label>
+        <label className="field" style={{ gridColumn: "1/-1" }}>
+          Orçamento (texto que sai na impressão)
+          <textarea name="quote_text" rows={5} defaultValue={o.quote_text ?? ""} disabled={!editar} placeholder="Ex.: serviços necessários e valores combinados com o cliente" />
         </label>
         <label className="field" style={{ gridColumn: "1/-1" }}>
           Laudo / serviço realizado

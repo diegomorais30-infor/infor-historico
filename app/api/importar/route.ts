@@ -197,6 +197,25 @@ export async function POST(req: NextRequest) {
       const { error } = await db.from("finance_entries").upsert(linhas.slice(i, i + 200), { onConflict: "company_id,legacy_ref" });
       if (error) erros.push(error.message); else ok += Math.min(200, linhas.length - i);
     }
+  } else if (tipo === "diff") {
+    // compara registros do Inforos com o que já está gravado e devolve só os que mudaram ou faltam
+    const { tabela, sub, campo, linhas } = registros as any;
+    if (!["service_orders", "clients", "sales", "finance_entries", "equipment", "parts"].includes(tabela)) return NextResponse.json({ erro: "tabela inválida" }, { status: 400, headers: CORS });
+    const estavel = (v: any): any => Array.isArray(v) ? v.map(estavel) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, estavel(v[k])])) : v;
+    const hash = (o: any) => { const t = JSON.stringify(estavel(o)); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return h; };
+    const guardado = new Map<string, number>();
+    for (let de = 0; ; de += 1000) {
+      const { data } = await db.from(tabela).select("legacy_ref, legacy_data").eq("company_id", EMPRESA).not("legacy_ref", "is", null).order("legacy_ref").range(de, de + 999);
+      for (const r of (data ?? []) as any[]) { const d = sub ? r.legacy_data?.[sub] : r.legacy_data; guardado.set(String(r.legacy_ref), d ? hash(d) : 0); }
+      if ((data ?? []).length < 1000) break;
+    }
+    const mudaram: string[] = [], faltam: string[] = [];
+    for (const r of linhas as any[]) {
+      const ref = String(r[campo]);
+      if (!guardado.has(ref)) faltam.push(ref);
+      else if (guardado.get(ref) !== hash(r)) mudaram.push(ref);
+    }
+    return NextResponse.json({ ok: linhas.length, faltam, mudaram, naoNoInforos: [...guardado.keys()].filter((k) => !(linhas as any[]).some((r) => String(r[campo]) === k)).length }, { headers: CORS });
   } else if (tipo === "bruto") {
     // guarda registros crus de módulos pequenos (garantias, orçamentos, compras...) sem perder nada
     const { modulo, campo, linhas } = registros as any;

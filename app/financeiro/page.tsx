@@ -285,7 +285,7 @@ export default async function Faturas({ searchParams }: { searchParams: Promise<
                       {vinculo && <div><Link className="chip-link" href={vinculo.href}>👁 {vinculo.rot}</Link></div>}
                     </td>
                     <td>{e.category ?? "—"}</td>
-                    <td><b>{e.party ?? "—"}</b><div className="muted" style={{ fontSize: 12 }}>{e.description}</div></td>
+                    <td><b>{e.legacy_data?.nome_cliente_fornecedor?.trim() || e.party || "—"}</b><div className="muted" style={{ fontSize: 12 }}>{e.description}</div></td>
                     <td>{e.payment_method ?? "—"}</td>
                     <td style={{ textAlign: "right" }}>{moeda(e.gross ?? e.amount)}</td>
                     <td style={{ textAlign: "right" }}>{moeda(e.discount ?? 0)}</td>

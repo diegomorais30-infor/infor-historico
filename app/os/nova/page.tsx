@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PRIORIDADE_OS } from "@/lib/os";
 import { podeEditar } from "@/lib/permissoes";
 import { vazioParaNulo } from "@/lib/format";
+import SeletorCliente from "@/components/seletor-cliente";
 
 async function criar(formData: FormData) {
   "use server";
@@ -41,7 +42,7 @@ export default async function NovaOS({
   if (!podeEditar(perfil?.role, (perfil as any)?.permissions, "os")) redirect("/os");
 
   const [{ data: clientes }, { data: equipamentos }, { data: equipe }] = await Promise.all([
-    supabase.from("clients").select("id, name").eq("active", true).order("name"),
+    supabase.from("clients").select("id, name, document").eq("active", true).order("name").limit(5000),
     supabase.from("equipment").select("id, code, brand, model, client_id").order("code"),
     supabase.from("profiles").select("id, full_name").eq("active", true).order("full_name"),
   ]);
@@ -63,17 +64,10 @@ export default async function NovaOS({
       {erro && <div className="error" style={{ margin: "14px 0" }}>{erro}</div>}
       <form action={criar} className="card grid g2" style={{ marginTop: 14 }}>
         <input type="hidden" name="service_request_id" value={chamado ?? ""} />
-        <label className="field">
+        <div className="field">
           Cliente
-          <select name="client_id" required defaultValue={eq?.client_id ?? ""}>
-            <option value="">Escolha…</option>
-            {(clientes ?? []).map((c: any) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <SeletorCliente clientes={(clientes ?? []) as any} inicial={eq?.client_id ?? ""} />
+        </div>
         <label className="field">
           Equipamento (opcional)
           <select name="equipment_id" defaultValue={eqInicial}>

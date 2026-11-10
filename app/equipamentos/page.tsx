@@ -72,7 +72,7 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
         <ConfigTabela chave="equipamentos" />
 <table className="table">
           <thead>
-            <tr>{editar && <th><SelecionarTodos /></th>}<th>Patrimônio</th><th>Equipamento</th><th>Cliente</th><th>Nº série</th><th>Local</th><th>Contrato</th><th>Status</th></tr>
+            <tr>{editar && <th><SelecionarTodos /></th>}<th>Etiqueta</th><th>Equipamento</th><th>Cliente</th><th>Marca</th><th>Modelo</th><th>Nº série</th><th>Cor</th><th>Local</th><th>Contrato</th><th>Status</th><th>Ações</th></tr>
           </thead>
           <tbody>
             {lista.map((e: any) => (
@@ -83,15 +83,19 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
                     {e.asset_tag ?? e.code ?? `#${e.equipment_number}`}
                   </Link>
                 </td>
-                <td>{[e.equipment_type, e.brand, e.model].filter(Boolean).join(" ") || "—"}{e.color ? <div className="muted">{e.color}</div> : null}</td>
+                <td>{e.equipment_type ?? "—"}</td>
                 <td>{e.clients?.name ?? "—"}</td>
+                <td>{e.brand ?? "—"}</td>
+                <td>{e.model ?? "—"}</td>
                 <td>{e.serial_number ?? "—"}</td>
+                <td>{e.color ?? "—"}</td>
                 <td>{e.location ?? "—"}</td>
                 <td>{e.contract_id ? "Contrato" : "Avulso"}</td>
                 <td><span className="badge">{e.status}</span></td>
+                <td style={{ whiteSpace: "nowrap" }}><Link className="btn primary" href={`/equipamentos/${e.id}`} title="Editar">✎</Link></td>
               </tr>
             ))}
-            {!lista.length && <tr><td colSpan={8} className="muted">Nenhum equipamento encontrado.</td></tr>}
+            {!lista.length && <tr><td colSpan={12} className="muted">Nenhum equipamento encontrado.</td></tr>}
           </tbody>
         </table>
       </section>

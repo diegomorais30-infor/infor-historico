@@ -9,6 +9,7 @@ async function salvarEmpresa(formData: FormData) {
   const supabase = await createClient();
   const t = (k: string) => String(formData.get(k) ?? "").trim() || null;
   const { error } = await supabase.from("companies").update({
+    name: t("name") ?? undefined, state_registration: t("state_registration"), municipal_registration: t("municipal_registration"),
     document: t("document"), address: t("address"), phone: t("phone"), email: t("email"), whatsapp: t("whatsapp"),
     entry_terms: t("entry_terms"), exit_terms: t("exit_terms"),
   }).eq("id", String(formData.get("id")));
@@ -19,7 +20,7 @@ async function salvarEmpresa(formData: FormData) {
 export default async function Emitente({ searchParams }: { searchParams: Promise<{ ok?: string; erro?: string }> }) {
   const { ok, erro } = await searchParams;
   const { supabase, perfil } = await getContexto();
-  const { data: e } = await supabase.from("companies").select("id, name, document, address, phone, email, entry_terms, exit_terms, plan, trial_ends_at, max_equipment, whatsapp, slug").eq("id", (perfil as any).company_id).single();
+  const { data: e } = await supabase.from("companies").select("id, name, state_registration, municipal_registration, document, address, phone, email, entry_terms, exit_terms, plan, trial_ends_at, max_equipment, whatsapp, slug").eq("id", (perfil as any).company_id).single();
   const admin = perfil?.role === "admin";
   const linha = (t: string, v: any) => (<tr><th style={{ textAlign: "left", width: 220 }}>{t}</th><td>{v ?? "—"}</td></tr>);
   return (
@@ -38,6 +39,9 @@ export default async function Emitente({ searchParams }: { searchParams: Promise
         <h2 style={{ marginTop: 0 }}>Dados que saem na impressão da OS</h2>
         <form action={salvarEmpresa} className="grid g2">
           <input type="hidden" name="id" value={e?.id} />
+          <label className="field" style={{ gridColumn: "1/-1" }}>Razão social / nome<input name="name" defaultValue={e?.name ?? ""} disabled={!admin} /></label>
+          <label className="field">Inscrição estadual<input name="state_registration" defaultValue={e?.state_registration ?? ""} disabled={!admin} /></label>
+          <label className="field">Inscrição municipal<input name="municipal_registration" defaultValue={e?.municipal_registration ?? ""} disabled={!admin} /></label>
           <label className="field">CNPJ<input name="document" defaultValue={e?.document ?? ""} disabled={!admin} /></label>
           <label className="field">Telefone<input name="phone" defaultValue={e?.phone ?? ""} disabled={!admin} /></label>
           <label className="field">E-mail<input name="email" type="email" defaultValue={e?.email ?? ""} disabled={!admin} /></label>

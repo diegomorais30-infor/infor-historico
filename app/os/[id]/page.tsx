@@ -388,6 +388,44 @@ async function faturar(formData: FormData) {
   redirect(`/os/${order_id}?aba=itens&ok=1`);
 }
 
+async function custoInterno(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const valor = Number(String(formData.get("amount") || "0").replace(",", ".")) || 0;
+  if (valor <= 0) redirect(voltar(order_id, "itens", "&erro=" + encodeURIComponent("Informe o valor do custo.")));
+  const { data: os } = await supabase.from("service_orders").select("number").eq("id", order_id).single();
+  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const pago = formData.get("pago") === "on";
+  const desc = String(formData.get("description") || "").trim() || `Custo OS - #${(os as any)?.number}`;
+  const { error } = await supabase.from("finance_entries").insert({
+    kind: "despesa",
+    category: String(formData.get("category") || "").trim() || "Custos",
+    description: desc,
+    party: String(formData.get("party") || "").trim() || null,
+    order_id,
+    origin: `os_custo:${crypto.randomUUID()}`,
+    amount: valor,
+    competence: hoje,
+    due_date: String(formData.get("due_date") || "") || hoje,
+    paid_at: pago ? hoje : null,
+    notes: String(formData.get("notes") || "").trim() || null,
+  });
+  if (error) redirect(voltar(order_id, "itens", "&erro=" + encodeURIComponent(error.message)));
+  await registrar(supabase, order_id, `Custo interno lançado: <b>${desc}</b>`);
+  revalidatePath(`/os/${order_id}`);
+  redirect(voltar(order_id, "itens"));
+}
+
+async function removerCusto(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  await supabase.from("finance_entries").delete().eq("id", String(formData.get("id"))).eq("order_id", order_id).like("origin", "os_custo:%");
+  revalidatePath(`/os/${order_id}`);
+  redirect(voltar(order_id, "itens"));
+}
+
 async function enviarAprovacao(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -450,7 +488,10 @@ export default async function DetalheOS({
   ]);
   const precoItem: Record<string, number> = {};
   let fin: any = { discount: 0, advance: 0, payment_method: "", due_date: "" };
+  let custos: any[] = [];
   if (verFin) {
+    const { data: cs } = await supabase.from("finance_entries").select("id, description, party, amount, due_date, paid_at").eq("order_id", id).like("origin", "os_custo:%").order("created_at");
+    custos = cs ?? [];
     const { data: ip } = await supabase.from("item_prices").select("item_id, unit_price");
     for (const r of ip ?? []) precoItem[(r as any).item_id] = Number((r as any).unit_price);
     const { data: of } = await supabase.from("order_finance").select("*").eq("order_id", id).maybeSingle();
@@ -923,6 +964,38 @@ export default async function DetalheOS({
                 <p className="muted" style={{ margin: "6px 0 10px" }}>Gera a receita no financeiro (e o adiantamento como já recebido) e muda o status para Faturado. Salve os valores antes.</p>
                 <button className="btn primary">Faturar OS</button>
               </form>
+            )}
+            {verFin && (
+              <div className="os-bloco" style={{ marginTop: 14 }}>
+                <b>Custo interno</b>
+                <p className="muted" style={{ margin: "6px 0 10px" }}>Despesas desta OS (peça comprada fora, frete, terceirizado…). Entram no Financeiro como despesa.</p>
+                {editFin && (
+                  <form action={custoInterno} className="grid g4">
+                    <input type="hidden" name="order_id" value={o.id} />
+                    <label className="field">Fornecedor / empresa<input name="party" /></label>
+                    <label className="field">Descrição<input name="description" placeholder={`Custo OS - #${o.number}`} /></label>
+                    <label className="field">Categoria<input name="category" defaultValue="Custos" /></label>
+                    <label className="field">Valor (R$)<input name="amount" inputMode="decimal" required /></label>
+                    <label className="field">Vencimento<input type="date" name="due_date" /></label>
+                    <label className="field">Anotações<input name="notes" /></label>
+                    <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Pago</label>
+                    <div style={{ alignSelf: "end" }}><button className="btn secondary">Lançar custo</button></div>
+                  </form>
+                )}
+                {!!custos.length && (
+                  <table className="table" style={{ marginTop: 10 }}>
+                    <thead><tr><th>Descrição</th><th>Fornecedor</th><th>Vencimento</th><th>Situação</th><th>Valor</th>{editFin && <th></th>}</tr></thead>
+                    <tbody>
+                      {custos.map((c) => (
+                        <tr key={c.id}>
+                          <td>{c.description}</td><td>{c.party ?? "—"}</td><td>{fmtData(c.due_date)}</td><td>{c.paid_at ? "Pago" : "Em aberto"}</td><td>{moeda(c.amount)}</td>
+                          {editFin && <td><form action={removerCusto}><input type="hidden" name="order_id" value={o.id} /><input type="hidden" name="id" value={c.id} /><button className="btn secondary">Remover</button></form></td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             )}
             {verFin && o.status === "faturado" && (
               <p className="muted" style={{ marginTop: 14 }}>OS faturada — veja a receita em <Link href="/financeiro" style={{ color: "var(--link)" }}>Financeiro</Link>.</p>

@@ -122,10 +122,11 @@ async function adicionarChecklist(formData: FormData) {
   "use server";
   const supabase = await createClient();
   const order_id = String(formData.get("order_id"));
-  const { data: base } = await supabase.from("checklist_items").select("name").eq("active", true).order("name");
-  const items = (base ?? []).map((b: any) => ({ name: b.name, v: "" }));
-  if (!items.length) redirect(voltar(order_id, "checklists", "&erro=" + encodeURIComponent("Cadastre itens em Configurações > Checklist antes.")));
-  await supabase.from("os_checklists").insert({ order_id, title: "Checklist de entrada", items });
+  const { data: modelo } = await supabase.from("checklist_templates").select("title, question, options, required, hidden").eq("id", String(formData.get("modelo"))).maybeSingle();
+  const m = modelo as any;
+  if (!m || !(m.options ?? []).length) redirect(voltar(order_id, "checklists", "&erro=" + encodeURIComponent("Escolha um modelo com itens (Configurações > Checklist).")));
+  const items = (m.options as string[]).map((name) => ({ name, v: "" }));
+  await supabase.from("os_checklists").insert({ order_id, title: m.title, question: m.question, required: m.required, hidden: m.hidden, items });
   await registrar(supabase, order_id, "Checklist adicionado");
   revalidatePath(`/os/${order_id}`);
   redirect(voltar(order_id, "checklists"));
@@ -139,6 +140,8 @@ async function salvarChecklist(formData: FormData) {
   const reiniciar = formData.get("reiniciar") === "1";
   const { data: c } = await supabase.from("os_checklists").select("items").eq("id", id).single();
   const items = ((c as any)?.items ?? []).map((it: any, i: number) => ({ name: it.name, v: reiniciar ? "" : String(formData.get(`item_${i}`) || "") }));
+  const { data: cab } = await supabase.from("os_checklists").select("required, title").eq("id", id).single();
+  if (!reiniciar && (cab as any)?.required && items.some((it: any) => !it.v)) redirect(voltar(order_id, "checklists", "&erro=" + encodeURIComponent(`"${(cab as any).title}" é obrigatório: responda todos os itens.`)));
   await supabase.from("os_checklists").update({ items }).eq("id", id);
   await registrar(supabase, order_id, reiniciar ? "Checklist reiniciado" : "Checklist atualizado");
   revalidatePath(`/os/${order_id}`);
@@ -484,18 +487,19 @@ export default async function DetalheOS({
   const perms = (perfil as any)?.permissions;
   const verFin = podeVer(perfil?.role, perms, "financeiro");
   const editFin = podeEditar(perfil?.role, perms, "financeiro");
-  const [{ data: itens }, { data: equipe }, { data: pecas }, { data: servicos }, { data: logs }, { data: tarefas }, { data: checks }, { data: vinc }, { data: eqCliente }, { data: termosGar }, { data: filiais }] = await Promise.all([
+  const [{ data: itens }, { data: equipe }, { data: pecas }, { data: servicos }, { data: logs }, { data: tarefas }, { data: checks }, { data: vinc }, { data: eqCliente }, { data: termosGar }, { data: filiais }, { data: modelosCk }] = await Promise.all([
     supabase.from("service_order_items").select("id, kind, description, quantity").eq("order_id", id).order("created_at"),
     supabase.from("profiles").select("id, full_name").eq("active", true).order("full_name"),
     supabase.from("parts").select("id, name, code").eq("active", true).order("name"),
     supabase.from("catalog_services").select("id, name").eq("active", true).order("name"),
     supabase.from("os_logs").select("id, user_name, text, created_at").eq("order_id", id).order("created_at", { ascending: false }),
     supabase.from("os_tasks").select("id, title, assignee_id, done, created_by, created_at").eq("order_id", id).order("created_at", { ascending: false }),
-    supabase.from("os_checklists").select("id, title, items").eq("order_id", id).order("created_at"),
+    supabase.from("os_checklists").select("id, title, items, required, question").eq("order_id", id).order("created_at"),
     supabase.from("os_equipment").select("equipment_id").eq("order_id", id),
     supabase.from("equipment").select("id, code, brand, model, serial_number").eq("client_id", o.client_id).order("code"),
     supabase.from("warranty_terms").select("name").order("name"),
     supabase.from("branches").select("name").order("name"),
+    supabase.from("checklist_templates").select("id, title").order("sort"),
   ]);
   const precoItem: Record<string, number> = {};
   let fin: any = { discount: 0, advance: 0, payment_method: "", due_date: "" };
@@ -830,8 +834,11 @@ export default async function DetalheOS({
                 <b>Nenhum checklist nesta OS</b>
                 <span className="muted">Adicione um checklist para registrar o estado do equipamento e dos testes finais.</span>
                 {editar && (
-                  <form action={adicionarChecklist}>
+                  <form action={adicionarChecklist} style={{ display: "flex", gap: 8, alignItems: "end" }}>
                     <input type="hidden" name="order_id" value={o.id} />
+                    <label className="field" style={{ minWidth: 240 }}>Modelo
+                      <select name="modelo">{(modelosCk ?? []).map((m: any) => <option key={m.id} value={m.id}>{m.title}</option>)}</select>
+                    </label>
                     <button className="btn primary">+ Adicionar Checklist</button>
                   </form>
                 )}
@@ -841,7 +848,8 @@ export default async function DetalheOS({
                 <form key={c.id} action={salvarChecklist} className="os-bloco" style={{ marginBottom: 12 }}>
                   <input type="hidden" name="order_id" value={o.id} />
                   <input type="hidden" name="id" value={c.id} />
-                  <h3 style={{ marginTop: 0 }}>{c.title}</h3>
+                  <h3 style={{ marginTop: 0 }}>{c.title}{c.required ? " *" : ""}</h3>
+                  {c.question && <p className="muted" style={{ marginTop: 0 }}>{c.question}</p>}
                   <table className="table">
                     <thead><tr><th>Item</th><th style={{ width: 200 }}>Resultado</th></tr></thead>
                     <tbody>
@@ -869,6 +877,15 @@ export default async function DetalheOS({
                   )}
                 </form>
               ))
+            )}
+            {editar && (checks ?? []).length > 0 && (
+              <form action={adicionarChecklist} style={{ display: "flex", gap: 8, alignItems: "end" }}>
+                <input type="hidden" name="order_id" value={o.id} />
+                <label className="field" style={{ minWidth: 240 }}>Adicionar outro modelo
+                  <select name="modelo">{(modelosCk ?? []).map((m: any) => <option key={m.id} value={m.id}>{m.title}</option>)}</select>
+                </label>
+                <button className="btn secondary">+ Adicionar</button>
+              </form>
             )}
           </>
         )}

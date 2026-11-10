@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
@@ -68,7 +69,8 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
         </p>
       )}
       <section className="card" style={{ overflowX: "auto" }}>
-        <table className="table">
+        <ConfigTabela chave="equipamentos" />
+<table className="table">
           <thead>
             <tr>{editar && <th><SelecionarTodos /></th>}<th>Patrimônio</th><th>Equipamento</th><th>Cliente</th><th>Nº série</th><th>Local</th><th>Contrato</th><th>Status</th></tr>
           </thead>

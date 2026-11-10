@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import ConfigTabela from "@/components/config-tabela";
 import { getContexto } from "@/lib/contexto";
 import { redirect } from "next/navigation";
 import { podeEditar, podeVer } from "@/lib/permissoes";
@@ -64,7 +65,8 @@ export default async function Fornecedores({ searchParams }: { searchParams: Pro
       )}
 
       <section className="card">
-        <table className="table">
+        <ConfigTabela chave="fornecedores" />
+<table className="table">
           <thead>
             <tr><th>Fornecedor</th><th>Categoria</th><th>Telefone</th><th></th></tr>
           </thead>

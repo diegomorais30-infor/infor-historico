@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import { podeVer } from "@/lib/permissoes";
@@ -33,7 +34,8 @@ export default async function Comissoes({ searchParams }: { searchParams: Promis
         <Link className="btn secondary" href="/comissoes">Limpar</Link>
       </form>
       <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
-        <table>
+        <ConfigTabela chave="comissoes" />
+<table>
           <thead><tr><th>Vendedor</th><th style={{ textAlign: "right" }}>Vendas</th><th style={{ textAlign: "right" }}>Total vendido</th><th style={{ textAlign: "right" }}>Faturado</th><th style={{ textAlign: "right" }}>Comissão</th></tr></thead>
           <tbody>
             {lista.map(([nome, x]) => (

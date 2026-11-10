@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import Zap from "@/components/zap";
 import { getContexto } from "@/lib/contexto";
 import { fmtData, hojeBR } from "@/lib/format";
@@ -97,7 +98,8 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
       </form>
 
       <section className="card">
-        <table className="table">
+        <ConfigTabela chave="os" />
+<table className="table">
           <thead>
             <tr>
               <th>OS</th>

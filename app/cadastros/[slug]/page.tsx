@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import ConfigTabela from "@/components/config-tabela";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
@@ -106,7 +107,8 @@ export default async function Cadastro({ params, searchParams }: { params: Promi
         </form>
       )}
       <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
-        <table>
+        <ConfigTabela chave="cadastros" />
+<table>
           <thead><tr>{cfg.colunas.map((c) => <th key={c}>{rotuloCol(c)}</th>)}<th /></tr></thead>
           <tbody>
             {linhas.map((l) => (

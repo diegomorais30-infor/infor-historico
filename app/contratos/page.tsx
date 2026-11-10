@@ -1,4 +1,5 @@
 import { podeEditar } from "@/lib/permissoes";
+import ConfigTabela from "@/components/config-tabela";
 import Link from "next/link";
 import { getContexto } from "@/lib/contexto";
 import { STATUS_CONTRATO, fmtData, hojeBR, moeda } from "@/lib/format";
@@ -53,7 +54,8 @@ export default async function Contratos() {
       </div>
 
       <section className="card" style={{ marginTop: 18 }}>
-        <table className="table">
+        <ConfigTabela chave="contratos" />
+<table className="table">
           <thead>
             <tr>
               <th>Contrato</th>

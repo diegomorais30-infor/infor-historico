@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import Zap from "@/components/zap";
 import { getContexto } from "@/lib/contexto";
 
@@ -29,7 +30,8 @@ export default async function Clientes({ searchParams }: { searchParams: Promise
       </form>
 
       <section className="card" style={{ overflowX: "auto" }}>
-        <table className="table">
+        <ConfigTabela chave="clientes" />
+<table className="table">
           <thead>
             <tr><th>Cliente</th><th>CNPJ/CPF</th><th>Contato</th><th>Telefone</th><th>E-mail</th><th>Cidade/UF</th></tr>
           </thead>

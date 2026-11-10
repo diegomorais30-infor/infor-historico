@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import { podeVer } from "@/lib/permissoes";
@@ -46,7 +47,8 @@ export default async function Extratos({ searchParams }: { searchParams: Promise
       </div>
       <p style={{ marginTop: 10 }}>Saldo anterior {moeda(saldoAnt)} · Entradas {moeda(ent)} · Saídas {moeda(sai)} · <b>Saldo final {moeda(saldo)}</b></p>
       <div className="card" style={{ overflowX: "auto" }}>
-        <table>
+        <ConfigTabela chave="extratos" />
+<table>
           <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th style={{ textAlign: "right" }}>Valor</th><th style={{ textAlign: "right" }}>Saldo</th></tr></thead>
           <tbody>
             {linhas.map((l: any) => (

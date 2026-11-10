@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import { podeVer } from "@/lib/permissoes";
@@ -20,7 +21,8 @@ export default async function NotasFiscais() {
       </div>
       <p className="muted">Por enquanto as notas são emitidas fora do sistema. Aqui ficam registradas as ordens de serviço que têm o número da nota informado. A emissão automática de NFS-e será ativada depois da configuração fiscal e da escolha do emissor.</p>
       <div className="card" style={{ overflowX: "auto", marginTop: 12 }}>
-        <table>
+        <ConfigTabela chave="notasfiscais" />
+<table>
           <thead><tr><th>OS</th><th>Cliente</th><th>Nota fiscal</th><th>Fechamento</th></tr></thead>
           <tbody>
             {lista.map((o) => (<tr key={o.id}><td><Link href={`/os/${o.id}`}>#{o.number}</Link></td><td>{o.clients?.name}</td><td>{o.external_invoice_number}</td><td>{fmtData(o.closed_at)}</td></tr>))}

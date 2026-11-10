@@ -1,4 +1,5 @@
 import { tudo } from "@/lib/paginar";
+import ConfigTabela from "@/components/config-tabela";
 import Link from "next/link";
 import { getContexto } from "@/lib/contexto";
 import { podeVer } from "@/lib/permissoes";
@@ -51,7 +52,8 @@ export default async function Modulo({ params }: { params: Promise<{ slug: strin
         <h1 className="title">{nome}</h1>
         <p className="muted">{linhas.length} registro(s) migrados do Inforos. A tela de edição ainda está em construção.</p>
         <div className="card" style={{ overflowX: "auto" }}>
-          <table>
+          <ConfigTabela chave="modulo" />
+<table>
             <thead><tr>{cfg.cols.map((c) => <th key={c.t}>{c.t}</th>)}</tr></thead>
             <tbody>
               {linhas.map((d: any, i: number) => (

@@ -224,3 +224,16 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .side-nav .side-grp .chev{margin-left:auto;transition:transform .15s;opacity:.7}
 .side-nav .side-grp.aberto .chev{transform:rotate(180deg)}
 .side-nav a.sub{border-left:2px solid var(--line);margin-left:22px;border-radius:0 8px 8px 0;padding-left:14px}
+
+/* ===== Tabelas padronizadas: linhas e colunas divididas, cabeçalho destacado ===== */
+.wrap table:not(.sem-grade){width:100%;border-collapse:collapse}
+.wrap table:not(.sem-grade) th,.wrap table:not(.sem-grade) td{border:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:middle;font-size:13px}
+.wrap table:not(.sem-grade) thead th{background:var(--soft);color:var(--muted);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.wrap table:not(.sem-grade) tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--soft) 45%,transparent)}
+.wrap table:not(.sem-grade) tbody tr:hover td{background:color-mix(in srgb,var(--soft) 90%,transparent)}
+.wrap .card table{min-width:0}
+.cfg-tab{position:relative;display:inline-block;margin-bottom:8px}
+.cfg-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:17px;cursor:pointer}
+.cfg-pop{position:absolute;left:0;top:40px;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0002;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:190px}
+.cfg-pop label{display:flex;gap:8px;align-items:center;font-size:13px}
+.cfg-pop input{width:auto}

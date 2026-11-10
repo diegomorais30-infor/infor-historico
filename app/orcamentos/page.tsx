@@ -4,13 +4,15 @@ import ConfigTabela from "@/components/config-tabela";
 import { getContexto } from "@/lib/contexto";
 import { fmtData, moeda } from "@/lib/format";
 import { podeEditar } from "@/lib/permissoes";
+import { lerConfig } from "@/lib/config";
 
 async function novo() {
   "use server";
   const { supabase } = await getContexto();
+  const cfg = await lerConfig(supabase);
   const { data: ult } = await supabase.from("quotes").select("number").order("number", { ascending: false }).limit(1);
   const number = Number((ult as any)?.[0]?.number ?? 0) + 1;
-  const validade = new Date(Date.now() + 7 * 86400000).toISOString();
+  const validade = new Date(Date.now() + cfg.orcamento_validade_dias * 86400000).toISOString();
   const { data, error } = await supabase.from("quotes").insert({ number, valid_until: validade }).select("id").single();
   if (error) redirect("/orcamentos?erro=" + encodeURIComponent(error.message));
   await supabase.from("quote_options").insert({ quote_id: (data as any).id, position: 1, name: "Opção 1" });

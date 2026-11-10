@@ -5,6 +5,7 @@ import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
 import { moeda } from "@/lib/format";
 import { podeEditar } from "@/lib/permissoes";
+import { lerConfig, preencher, saudacao } from "@/lib/config";
 
 const nume = (v: FormDataEntryValue | null) => Number(String(v ?? "0").replace(",", ".")) || 0;
 const volta = (id: string, extra = "") => `/orcamentos/${id}${extra}`;
@@ -161,6 +162,7 @@ export default async function Orcamento({ params, searchParams }: { params: Prom
   ]);
   const validade = q.valid_until ? new Date(q.valid_until).toLocaleString("sv-SE", { timeZone: "America/Sao_Paulo" }).slice(0, 16).replace(" ", "T") : "";
   const vencido = q.valid_until && new Date(q.valid_until).getTime() < Date.now() && ["rascunho", "enviado"].includes(q.status);
+  const cfg = await lerConfig(supabase);
   const link = `${SITE}/orcamento/express/${q.public_token}`;
   const fone = String(q.clients?.mobile || q.clients?.phone || "").replace(/\D/g, "").replace(/^(\d{10,11})$/, "55$1");
 
@@ -176,7 +178,7 @@ export default async function Orcamento({ params, searchParams }: { params: Prom
           {editar && q.status === "rascunho" && (
             <form action={status}><input type="hidden" name="id" value={q.id} /><input type="hidden" name="status" value="enviado" /><button className="btn secondary">Marcar como enviado</button></form>
           )}
-          {fone && <a className="btn secondary" target="_blank" rel="noreferrer" href={`https://wa.me/${fone}?text=${encodeURIComponent(`Olá! Segue o seu orçamento da Infor Cartuchos: ${link}`)}`}>Enviar link</a>}
+          {fone && <a className="btn secondary" target="_blank" rel="noreferrer" href={`https://wa.me/${fone}?text=${encodeURIComponent(preencher(cfg.msg_orcamento, { cliente: q.clients?.name, numero: q.number, link, saudacao: saudacao(), validade: q.valid_until ? new Date(q.valid_until).toLocaleDateString("pt-BR") : "" }))}`}>Enviar link</a>}
           <Link className="btn secondary" target="_blank" href={`/orcamento/express/${q.public_token}`}>Pré-visualizar</Link>
         </div>
       </div>

@@ -108,7 +108,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/garantias/termos", "Termos de garantia", "📜", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/cadastros/checklist", "Checklist", "☑️", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/cadastros/tags", "Tags", "🔖", papel === "admin", { grupo: "Configurações", sub: true }),
-        M("/emitente", "Parâmetros", "🎛️", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/parametros", "Parâmetros", "🎛️", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/painel", "Painel de gestão", "🧭", papel === "admin"),
       ].filter(Boolean) as ItemMenu[])
     : [];

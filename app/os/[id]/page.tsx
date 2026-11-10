@@ -9,6 +9,7 @@ import { fmtData, moeda } from "@/lib/format";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { COR_PRIORIDADE, COR_STATUS_OS, corSituacao, FLUXO_OS, ROTULO_PRIORIDADE, PRIORIDADE_OS, progressoOS, RESPONSAVEL_ETAPA, SITUACOES_OS, STATUS_OS } from "@/lib/os";
 import { podeEditar, podeVer } from "@/lib/permissoes";
+import { lerConfig, preencher, saudacao } from "@/lib/config";
 
 
 const ABAS: [string, string][] = [
@@ -465,6 +466,12 @@ export default async function DetalheOS({
   const total = Math.max(subtotal - Number(fin.discount ?? 0), 0);
   const aPagar = Math.max(total - Number(fin.advance ?? 0), 0);
 
+  const cfg = await lerConfig(supabase);
+  const msgStatus = preencher(cfg.msg_os_status, {
+    cliente: o.clients?.name, os: o.number, status: STATUS_OS[o.status] ?? o.status, situacao: o.situacao ?? "", saudacao: saudacao(),
+    equipamento: o.equipment ? `${o.equipment.brand ?? ""} ${o.equipment.model ?? ""}`.trim() : "",
+    link_acompanhamento: o.approval_token ? `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://inforgest.com.br"}/orcamento/${o.approval_token}` : "",
+  });
   const nomeDe = (uid?: string | null) => (equipe ?? []).find((p: any) => p.id === uid)?.full_name ?? "—";
   const progresso = progressoOS(o.status);
   const etapaAtual = o.status === "pausado" ? "andamento" : o.status;
@@ -585,7 +592,7 @@ export default async function DetalheOS({
                 <div className="os-ro">
                   <b>{o.clients?.name}</b>{o.clients?.phone && <> | Tel: {o.clients.phone}</>}
                   <Link href={`/clientes/${o.clients?.id}`} style={{ marginLeft: "auto", color: "var(--link)" }}>abrir cadastro</Link>
-                  <Zap telefone={o.clients?.mobile || o.clients?.phone} mensagem={`Olá, ${o.clients?.name}! Sobre a sua OS #${o.number} na Infor Cartuchos:`} />
+                  <Zap telefone={o.clients?.mobile || o.clients?.phone} mensagem={msgStatus} />
                 </div>
               </div>
               <label className="field">Solicitante

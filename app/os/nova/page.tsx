@@ -1,3 +1,4 @@
+import { lerConfig } from "@/lib/config";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +15,7 @@ async function criar(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const cfgPrazo = (await lerConfig(supabase)).prazo_os_dias;
   const client_id = String(formData.get("client_id") || "");
   if (!client_id) redirect("/os/nova?erro=" + encodeURIComponent("Escolha o cliente."));
 
@@ -22,7 +24,7 @@ async function criar(formData: FormData) {
     equipment_id: String(formData.get("equipment_id") || ""),
     service_request_id: String(formData.get("service_request_id") || ""),
     priority: String(formData.get("priority") || "normal"),
-    deadline: String(formData.get("deadline") || ""),
+    deadline: String(formData.get("deadline") || "") || (cfgPrazo > 0 ? new Date(Date.now() + cfgPrazo * 86400000).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : ""),
     technician_id: String(formData.get("technician_id") || ""),
     defect: String(formData.get("defect") || ""),
     contact_name: String(formData.get("contact_name") || ""),

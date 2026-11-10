@@ -187,3 +187,40 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .wrap input::placeholder{color:#94a3b8}
 /* Abas com nome longo */
 .btn.aba{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===== Faturas (estilo Inforos) ===== */
+.fat-card{padding:14px 16px}
+.fat-t{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted);display:flex;align-items:center;gap:6px}
+.fat-t .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.fat-v{font-size:26px;font-weight:800;color:var(--ink);margin-top:4px}
+.fat-s{font-size:12px}
+.fat-f{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+.bar{height:7px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;border-radius:99px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--card)}
+.seg a{padding:8px 13px;font-size:13px;font-weight:600;color:var(--ink);border-right:1px solid var(--line)}
+.seg a:last-child{border-right:0}
+.seg a.on{background:#0d2142;color:#fff}
+.tag-r,.tag-d{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.tag-r{background:#dcf5e9;color:#0e7a4d}
+.tag-d{background:#fde4e4;color:#b42328}
+.chip-link{display:inline-block;margin-top:4px;padding:1px 7px;border:1px solid var(--line);border-radius:6px;font-size:11px;color:var(--link)}
+.sw{width:38px;height:22px;border-radius:99px;border:0;background:#c9d2de;position:relative;cursor:pointer;padding:0}
+.sw i{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:#16a36a}
+.sw.on i{left:19px}
+.menu-novo{position:relative}
+.menu-novo summary{list-style:none;cursor:pointer}
+.menu-novo summary::-webkit-details-marker{display:none}
+.menu-pop{position:absolute;right:0;top:110%;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0002;min-width:190px;padding:6px}
+.menu-pop a{display:block;padding:9px 12px;border-radius:8px;color:var(--ink);font-size:13px}
+.menu-pop a:hover{background:var(--soft)}
+
+/* Menu lateral com grupos que abrem/fecham (como no Inforos) */
+.side-nav .side-grp{display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;border-radius:8px;border:0;background:none;font:inherit;font-weight:700;font-size:12px;color:var(--ink);cursor:pointer;text-align:left}
+.side-nav .side-grp:hover{background:var(--soft)}
+.side-nav .side-grp.tem-ativo{color:#fff}
+.side-nav .side-grp .ico{width:22px;text-align:center}
+.side-nav .side-grp .chev{margin-left:auto;transition:transform .15s;opacity:.7}
+.side-nav .side-grp.aberto .chev{transform:rotate(180deg)}
+.side-nav a.sub{border-left:2px solid var(--line);margin-left:22px;border-radius:0 8px 8px 0;padding-left:14px}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
@@ -165,7 +166,8 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
       {grupos.map((g) => (
         <section className="card" key={g.secao} style={{ marginBottom: 16 }}>
           {g.secao && <h2 style={{ marginTop: 0 }}>{g.secao}</h2>}
-          <table className="table">
+          <ConfigTabela chave="estoque" />
+<table className="table">
             <thead>
               <tr>
                 <th>Item</th>

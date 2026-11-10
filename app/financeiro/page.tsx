@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
@@ -260,7 +261,8 @@ export default async function Faturas({ searchParams }: { searchParams: Promise<
           <span className="muted"><b>{lista.length}</b> lançamentos</span>
         </div>
         <div style={{ overflowX: "auto" }}>
-          <table className="table">
+          <ConfigTabela chave="faturas" />
+<table className="table">
             <thead>
               <tr>
                 <th>#</th><th>Lançamento</th><th>Categoria</th><th>Cliente / fornecedor</th><th>Forma pgto</th>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
@@ -237,7 +238,8 @@ export default async function Leituras({
                 </details>
               );
             })}
-            <table className="table">
+            <ConfigTabela chave="leituras" />
+<table className="table">
               <thead>
                 <tr>
                   <th>Impressora</th>

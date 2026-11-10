@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
@@ -71,7 +72,8 @@ export default async function Chamados({
       {erro && <div className="error" style={{ marginBottom: 14 }}>{erro}</div>}
 
       <section className="card">
-        <table className="table">
+        <ConfigTabela chave="chamados" />
+<table className="table">
           <thead>
             <tr>
               <th>Protocolo</th>

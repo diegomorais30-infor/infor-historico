@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import ConfigTabela from "@/components/config-tabela";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
@@ -77,7 +78,8 @@ export default async function Servicos({ searchParams }: { searchParams: Promise
         </form>
       )}
       <section className="card">
-        <table className="table">
+        <ConfigTabela chave="servicos" />
+<table className="table">
           <thead>
             <tr>
               <th>Serviço</th>

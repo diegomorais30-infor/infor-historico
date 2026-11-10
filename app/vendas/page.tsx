@@ -2,7 +2,7 @@ import Link from "next/link";
 import ConfigTabela from "@/components/config-tabela";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
-import { podeVer } from "@/lib/permissoes";
+import { podeEditar, podeVer } from "@/lib/permissoes";
 import { fmtData, moeda } from "@/lib/format";
 
 export default async function Vendas({ searchParams }: { searchParams: Promise<{ mes?: string; q?: string; ver?: string; vend?: string }> }) {
@@ -40,6 +40,7 @@ export default async function Vendas({ searchParams }: { searchParams: Promise<{
           <h1 className="title">Vendas</h1>
           <div className="muted">Vendas de produtos e serviços, com o faturamento de cada uma. Inclui as faturas mensais de locação migradas do Inforos.</div>
         </div>
+        {podeEditar(perfil?.role, (perfil as any)?.permissions, "financeiro") && <Link className="btn primary" href="/vendas/nova">+ Nova venda</Link>}
       </div>
 
       <form style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", marginBottom: 12 }}>

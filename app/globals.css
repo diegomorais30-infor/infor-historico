@@ -237,3 +237,7 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .cfg-pop{position:absolute;left:0;top:40px;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0002;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:190px}
 .cfg-pop label{display:flex;gap:8px;align-items:center;font-size:13px}
 .cfg-pop input{width:auto}
+
+/* Selos claros, como no Inforos */
+.wrap .badge{background:#dcf5e9;color:#0e7a4d;white-space:nowrap;font-weight:700}
+.wrap .badge.warn{background:#fff0d1;color:#8a5a00}

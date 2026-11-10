@@ -63,13 +63,7 @@ async function registrarEntrada(formData: FormData) {
   const quantidade = Number(formData.get("quantidade")) || 0;
   if (!id || quantidade <= 0) redirect("/estoque?erro=" + encodeURIComponent("Informe uma quantidade maior que zero."));
 
-  const { data: peca } = await supabase.from("parts").select("stock_quantity").eq("id", id).single();
-  if (!peca) redirect("/estoque?erro=" + encodeURIComponent("Peça não encontrada."));
-
-  const { error } = await supabase
-    .from("parts")
-    .update({ stock_quantity: Number(peca.stock_quantity) + quantidade })
-    .eq("id", id);
+  const { error } = await supabase.from("stock_movements").insert({ part_id: id, quantity: quantidade, reason: "entrada", notes: "Entrada rápida (Estoque)" });
   if (error) redirect("/estoque?erro=" + encodeURIComponent(error.message));
 
   revalidatePath("/estoque");

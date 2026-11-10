@@ -388,6 +388,17 @@ async function faturar(formData: FormData) {
   redirect(`/os/${order_id}?aba=itens&ok=1`);
 }
 
+async function adicionarAtividade(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const texto = String(formData.get("texto") || "").trim().replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" } as any)[c]);
+  if (!texto) redirect(voltar(order_id, "logs", "&erro=" + encodeURIComponent("Insira um texto descrevendo a atividade.")));
+  await registrar(supabase, order_id, texto);
+  revalidatePath(`/os/${order_id}`);
+  redirect(voltar(order_id, "logs"));
+}
+
 async function custoInterno(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -1123,6 +1134,13 @@ export default async function DetalheOS({
           </div>
         )}
 
+        {aba === "logs" && editar && (
+          <form action={adicionarAtividade} className="inline" style={{ marginBottom: 12 }}>
+            <input type="hidden" name="order_id" value={o.id} />
+            <input name="texto" placeholder="Descreva a atividade realizada" style={{ flex: 1, minWidth: 260 }} />
+            <button className="btn primary">+ Adicionar atividade</button>
+          </form>
+        )}
         {aba === "logs" && (
           <table className="table">
             <thead><tr><th>Usuário</th><th>Tarefa</th><th style={{ width: 150 }}>Data / hora</th></tr></thead>

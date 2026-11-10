@@ -121,7 +121,7 @@ export default async function ImprimirOS({ params }: { params: Promise<{ id: str
 
           {(itens ?? []).length > 0 && (<>
             <div style={{ ...rotulo, borderTop: "1px solid #ddd", paddingTop: 8 }}>Serviços e peças</div>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <table className="sem-grade" style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <tbody>
                 {(itens ?? []).map((i: any, k: number) => (
                   <tr key={k} style={{ borderBottom: "1px solid #eee" }}>
@@ -143,7 +143,7 @@ export default async function ImprimirOS({ params }: { params: Promise<{ id: str
 
           {/* Equipamento */}
           {eq && (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, marginTop: 12 }}>
+            <table className="sem-grade" style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, marginTop: 12 }}>
               <thead>
                 <tr style={{ background: "#f0f0f0", color: "#555" }}>
                   {["Equipamento", "Marca", "Modelo", "SN/IMEI", "Cor", "Problema Relatado"].map((h) => (

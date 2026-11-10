@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const itens: ItemMenu[] = user
     ? ([
         M("/dashboard", "Início", "🏠", true),
-        M("/cadastros/tarefas", "Tarefas", "✅", true),
+        M("/tarefas", "Tarefas", "✅", true),
         M("/chamados", "Chamados", "📩", v("chamados"), { badge: abertos }),
         M("/clientes", "Clientes", "👥", v("clientes")),
         M("/fornecedores", "Fornecedores", "🚚", v("financeiro")),

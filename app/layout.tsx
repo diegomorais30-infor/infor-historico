@@ -77,7 +77,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/os?status=faturado", "Faturado", "💵", v("os"), { grupo: "Ordens de serviço", sub: true }),
         M("/os?status=finalizado", "Finalizado", "🏁", v("os"), { grupo: "Ordens de serviço", sub: true }),
         M("/os?status=cancelado", "Cancelado", "🚫", v("os"), { grupo: "Ordens de serviço", sub: true }),
-        M("/modulo/garantias", "Garantias", "🛡️", v("os")),
+        M("/garantias", "Garantias", "🛡️", v("os")),
         M("/contratos", "Contratos de locação", "📄", v("contratos")),
         M("/leituras", "Leituras", "📊", v("leituras")),
         M("/vendas", "Vendas", "🧾", v("financeiro")),
@@ -96,7 +96,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         // Configurações
         M("/usuarios", "Usuários e permissões", "⚙️", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/emitente", "Emitente / filiais", "🏢", papel === "admin", { grupo: "Configurações", sub: true }),
-        M("/modulo/termos", "Termos de garantia", "📜", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/garantias/termos", "Termos de garantia", "📜", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/cadastros/checklist", "Checklist", "☑️", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/cadastros/tags", "Tags", "🔖", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/emitente", "Parâmetros", "🎛️", papel === "admin", { grupo: "Configurações", sub: true }),

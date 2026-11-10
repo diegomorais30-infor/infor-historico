@@ -434,7 +434,7 @@ export default async function DetalheOS({
   const perms = (perfil as any)?.permissions;
   const verFin = podeVer(perfil?.role, perms, "financeiro");
   const editFin = podeEditar(perfil?.role, perms, "financeiro");
-  const [{ data: itens }, { data: equipe }, { data: pecas }, { data: servicos }, { data: logs }, { data: tarefas }, { data: checks }, { data: vinc }, { data: eqCliente }] = await Promise.all([
+  const [{ data: itens }, { data: equipe }, { data: pecas }, { data: servicos }, { data: logs }, { data: tarefas }, { data: checks }, { data: vinc }, { data: eqCliente }, { data: termosGar }] = await Promise.all([
     supabase.from("service_order_items").select("id, kind, description, quantity").eq("order_id", id).order("created_at"),
     supabase.from("profiles").select("id, full_name").eq("active", true).order("full_name"),
     supabase.from("parts").select("id, name, code").eq("active", true).order("name"),
@@ -444,6 +444,7 @@ export default async function DetalheOS({
     supabase.from("os_checklists").select("id, title, items").eq("order_id", id).order("created_at"),
     supabase.from("os_equipment").select("equipment_id").eq("order_id", id),
     supabase.from("equipment").select("id, code, brand, model, serial_number").eq("client_id", o.client_id).order("code"),
+    supabase.from("warranty_terms").select("name").order("name"),
   ]);
   const precoItem: Record<string, number> = {};
   let fin: any = { discount: 0, advance: 0, payment_method: "", due_date: "" };
@@ -567,7 +568,7 @@ export default async function DetalheOS({
               </label>
               <label className="field">Termo
                 <input name="termo" list="termos" defaultValue={o.termo ?? ""} disabled={!editar} />
-                <datalist id="termos"><option value="Termo Entrada" /><option value="Termo Saída" /></datalist>
+                <datalist id="termos">{(termosGar ?? []).map((x: any) => <option key={x.name} value={x.name} />)}</datalist>
               </label>
               <label className="field">Situação
                 <input name="situacao" list="situacoes" defaultValue={o.situacao ?? ""} disabled={!editar} />

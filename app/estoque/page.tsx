@@ -183,7 +183,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
                 const baixo = Number(p.stock_quantity) <= Number(p.minimum_stock);
                 return (
                   <tr key={p.id}>
-                    <td>{p.name}</td>
+                    <td><Link href={`/estoque/${p.id}`}>{p.name}</Link></td>
                     <td>{p.code ?? "—"}</td>
                     <td>
                       <b>{p.stock_quantity}</b> {baixo && <span className="badge warn">Repor</span>}

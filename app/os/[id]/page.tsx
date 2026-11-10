@@ -435,7 +435,7 @@ export default async function DetalheOS({
   const perms = (perfil as any)?.permissions;
   const verFin = podeVer(perfil?.role, perms, "financeiro");
   const editFin = podeEditar(perfil?.role, perms, "financeiro");
-  const [{ data: itens }, { data: equipe }, { data: pecas }, { data: servicos }, { data: logs }, { data: tarefas }, { data: checks }, { data: vinc }, { data: eqCliente }, { data: termosGar }] = await Promise.all([
+  const [{ data: itens }, { data: equipe }, { data: pecas }, { data: servicos }, { data: logs }, { data: tarefas }, { data: checks }, { data: vinc }, { data: eqCliente }, { data: termosGar }, { data: filiais }] = await Promise.all([
     supabase.from("service_order_items").select("id, kind, description, quantity").eq("order_id", id).order("created_at"),
     supabase.from("profiles").select("id, full_name").eq("active", true).order("full_name"),
     supabase.from("parts").select("id, name, code").eq("active", true).order("name"),
@@ -446,6 +446,7 @@ export default async function DetalheOS({
     supabase.from("os_equipment").select("equipment_id").eq("order_id", id),
     supabase.from("equipment").select("id, code, brand, model, serial_number").eq("client_id", o.client_id).order("code"),
     supabase.from("warranty_terms").select("name").order("name"),
+    supabase.from("branches").select("name").order("name"),
   ]);
   const precoItem: Record<string, number> = {};
   let fin: any = { discount: 0, advance: 0, payment_method: "", due_date: "" };
@@ -617,7 +618,10 @@ export default async function DetalheOS({
                 </select>
               </label>
               <label className="field">Filial
-                <input name="filial" defaultValue={o.filial ?? ""} disabled={!editar} />
+                <select name="filial" defaultValue={o.filial ?? ""} disabled={!editar}>
+                  <option value="">----</option>
+                  {(filiais ?? []).map((b: any) => <option key={b.name}>{b.name}</option>)}
+                </select>
               </label>
               <label className="field">Atendente
                 <select name="atendente_id" defaultValue={o.created_by ?? ""} disabled={!editar}>

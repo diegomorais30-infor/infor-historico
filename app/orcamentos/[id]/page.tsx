@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
-import { moeda } from "@/lib/format";
+import { hojeBR, moeda } from "@/lib/format";
 import { podeEditar } from "@/lib/permissoes";
 import { lerConfig, preencher, saudacao } from "@/lib/config";
 
@@ -135,6 +135,40 @@ async function converterOS(fd: FormData) {
   }
   await supabase.from("quotes").update({ converted_os_id: osId, status: "convertido" }).eq("id", id);
   redirect(`/os/${osId}?aba=itens`);
+}
+
+async function converterVenda(fd: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(fd.get("id"));
+  const { data: q } = await supabase.from("quotes").select("*, quote_options(id, position, quote_items(kind, description, quantity, unit_price, discount))").eq("id", id).single();
+  const o: any = q;
+  if (!o?.client_id) redirect(volta(id, "?erro=" + encodeURIComponent("Escolha o cliente antes de converter.")));
+  if (o.converted_sale_id) redirect(`/vendas/${o.converted_sale_id}`);
+  const ops = [...(o.quote_options ?? [])].sort((a: any, b: any) => a.position - b.position);
+  const op = ops.find((x: any) => x.id === o.chosen_option) ?? ops[0];
+  const { data: ult } = await supabase.from("sales").select("number").order("number", { ascending: false }).limit(1);
+  const number = Number((ult as any)?.[0]?.number ?? 0) + 1;
+  let seller: string | null = null;
+  if (o.seller_id) {
+    const { data: pf } = await supabase.from("profiles").select("full_name").eq("id", o.seller_id).maybeSingle();
+    seller = (pf as any)?.full_name ?? null;
+  }
+  const itens: any[] = op?.quote_items ?? [];
+  const total = itens.reduce((t, i) => t + Number(i.quantity) * Number(i.unit_price) - Number(i.discount), 0);
+  const { data: v, error } = await supabase
+    .from("sales")
+    .insert({ number, client_id: o.client_id, sold_at: hojeBR(), seller, notes: `Orçamento Express #${o.number}`, total: Math.max(total, 0) })
+    .select("id")
+    .single();
+  if (error || !v) redirect(volta(id, "?erro=" + encodeURIComponent(error?.message ?? "Não foi possível criar a venda.")));
+  const vid = (v as any).id;
+  if (itens.length)
+    await supabase.from("sale_items").insert(
+      itens.map((i) => ({ sale_id: vid, kind: i.kind === "servico" ? "servico" : "produto", description: i.description, quantity: Number(i.quantity), unit_price: Number(i.unit_price), discount: Number(i.discount) }))
+    );
+  await supabase.from("quotes").update({ converted_sale_id: vid, status: "convertido" }).eq("id", id);
+  redirect(`/vendas/${vid}`);
 }
 
 async function excluir(fd: FormData) {
@@ -273,6 +307,9 @@ export default async function Orcamento({ params, searchParams }: { params: Prom
           <div style={{ display: "flex", gap: 8 }}>
             {q.converted_os_id ? <Link className="btn primary" href={`/os/${q.converted_os_id}`}>Ver OS gerada</Link> : (
               <form action={converterOS}><input type="hidden" name="id" value={q.id} /><button className="btn primary">Converter em OS</button></form>
+            )}
+            {q.converted_sale_id ? <Link className="btn secondary" href={`/vendas/${q.converted_sale_id}`}>Ver venda gerada</Link> : (
+              <form action={converterVenda}><input type="hidden" name="id" value={q.id} /><button className="btn secondary">Converter em Venda</button></form>
             )}
             <form action={excluir}><input type="hidden" name="id" value={q.id} /><button className="btn secondary">Excluir</button></form>
           </div>

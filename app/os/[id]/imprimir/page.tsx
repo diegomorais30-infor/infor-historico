@@ -170,7 +170,12 @@ export default async function ImprimirOS({ params }: { params: Promise<{ id: str
           </>)}
 
           <div style={{ display: "flex", gap: 40, marginTop: "auto", paddingTop: 36, fontSize: 12 }}>
-            <div style={{ flex: 1, textAlign: "center" }}>{c.name}<div style={{ borderTop: "1px solid #666", marginTop: 26 }} /></div>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              {o.signature_data ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={o.signature_data} alt="Assinatura" style={{ height: 52, display: "block", margin: "0 auto -26px" }} />
+              ) : null}
+              {c.name}<div style={{ borderTop: "1px solid #666", marginTop: 26 }} /></div>
             <div style={{ flex: 1, textAlign: "center" }}>{emp?.name}<div style={{ borderTop: "1px solid #666", marginTop: 26 }} /></div>
           </div>
         </section>

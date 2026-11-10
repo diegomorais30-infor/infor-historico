@@ -2,9 +2,9 @@ import Link from "next/link";
 import ConfigTabela from "@/components/config-tabela";
 import Zap from "@/components/zap";
 import { getContexto } from "@/lib/contexto";
-import { fmtData, hojeBR } from "@/lib/format";
+import { fmtData, hojeBR, moeda } from "@/lib/format";
 import { COR_ATRASO, COR_OK, COR_PRIORIDADE, COR_STATUS_OS, corSituacao, ROTULO_PRIORIDADE, STATUS_OS } from "@/lib/os";
-import { podeEditar } from "@/lib/permissoes";
+import { podeEditar, podeVer } from "@/lib/permissoes";
 
 export default async function ListaOS({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; prazo?: string; prioridade?: string; situacao?: string }> }) {
   const { status, q, prazo, prioridade, situacao } = await searchParams;
@@ -13,7 +13,7 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
 
   const { data } = await supabase
     .from("service_orders")
-    .select("id, number, status, priority, situacao, warranty, defect, deadline, entry_at, created_by, technician_id, clients(name, phone, mobile), equipment(code, brand, model)")
+    .select("id, number, status, priority, situacao, warranty, tags, defect, deadline, entry_at, created_by, technician_id, clients(name, phone, mobile), equipment(code, brand, model)")
     .order("number", { ascending: false })
     .limit(500);
   const todas: any[] = data ?? [];
@@ -47,10 +47,31 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
       .some((t: string) => t.toLowerCase().includes(termo));
   });
 
+  const verFin = podeVer(perfil?.role, (perfil as any)?.permissions, "financeiro");
+  const valores: Record<string, { prod: number; serv: number; desc: number }> = {};
+  if (verFin && lista.length) {
+    const ids = lista.map((o) => o.id);
+    const pedacos: string[][] = [];
+    for (let i = 0; i < ids.length; i += 80) pedacos.push(ids.slice(i, i + 80));
+    const [its, fins, precos] = await Promise.all([
+      Promise.all(pedacos.map((c) => supabase.from("service_order_items").select("id, order_id, kind, quantity").in("order_id", c))),
+      Promise.all(pedacos.map((c) => supabase.from("order_finance").select("order_id, discount").in("order_id", c))),
+      Promise.all(pedacos.map((c) => supabase.from("item_prices").select("item_id, unit_price, service_order_items!inner(order_id)").in("service_order_items.order_id", c))),
+    ]);
+    const pr: Record<string, number> = {};
+    for (const r of precos.flatMap((x) => x.data ?? [])) pr[(r as any).item_id] = Number((r as any).unit_price);
+    for (const i of its.flatMap((x) => x.data ?? []) as any[]) {
+      const v = (valores[i.order_id] ??= { prod: 0, serv: 0, desc: 0 });
+      const sub = Number(i.quantity) * (pr[i.id] ?? 0);
+      if (i.kind === "peca") v.prod += sub; else v.serv += sub;
+    }
+    for (const f of fins.flatMap((x) => x.data ?? []) as any[]) (valores[f.order_id] ??= { prod: 0, serv: 0, desc: 0 }).desc = Number(f.discount ?? 0);
+  }
+
   return (
     <main className="wrap">
       <div className="headrow" style={{ marginBottom: 14 }}>
-        <h1 className="title">Ordens de serviço</h1>
+        <h1 className="title">Ordens de Serviço</h1>
         {editar && (
           <Link className="btn primary" href="/os/nova">
             + Nova OS
@@ -107,7 +128,14 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
               <th>Status</th>
               <th>Atendente / técnico</th>
               <th>Prioridade</th>
+              <th>Entrada</th>
               <th>Prazo</th>
+              {verFin && <th>Produtos</th>}
+              {verFin && <th>Serviços</th>}
+              {verFin && <th>Desconto</th>}
+              {verFin && <th>Valor</th>}
+              <th>Tags</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -136,16 +164,26 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
                     <div className="muted">{nome(o.technician_id)}</div>
                   </td>
                   <td><span className="selo" style={{ background: COR_PRIORIDADE[o.priority] }}>{ROTULO_PRIORIDADE[o.priority] ?? o.priority}</span></td>
+                  <td>{fmtData(o.entry_at)}</td>
                   <td>
                     {o.deadline && !encerrada(o) && <div><span className="selo" style={{ background: atrasada ? COR_ATRASO : COR_OK }}>{atrasada ? "Vencido" : "No prazo"}</span></div>}
                     {fmtData(o.deadline)}
+                  </td>
+                  {verFin && <td>{moeda(valores[o.id]?.prod ?? 0)}</td>}
+                  {verFin && <td>{moeda(valores[o.id]?.serv ?? 0)}</td>}
+                  {verFin && <td>{moeda(valores[o.id]?.desc ?? 0)}</td>}
+                  {verFin && <td><b>{moeda(Math.max((valores[o.id]?.prod ?? 0) + (valores[o.id]?.serv ?? 0) - (valores[o.id]?.desc ?? 0), 0))}</b></td>}
+                  <td>{((o.tags ?? []) as string[]).map((tg) => <span key={tg} className="os-tag" style={{ marginRight: 4 }}>{tg}</span>)}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <Link className="btn primary" href={`/os/${o.id}`} title="Editar">✎</Link>{" "}
+                    <Link className="btn secondary" href={`/os/${o.id}/imprimir`} title="Imprimir">🖨</Link>
                   </td>
                 </tr>
               );
             })}
             {!lista.length && (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={13} className="muted">
                   Nenhuma ordem de serviço aqui.
                 </td>
               </tr>

@@ -5,7 +5,7 @@ import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
 
 const ESCOPOS: Record<string, string> = {
-  os: "Ordens de Serviço", clientes: "Clientes", equipamentos: "Equipamentos", produtos: "Produtos", vendas: "Vendas",
+  os: "Ordens de Serviço", clientes: "Clientes", equipamentos: "Equipamentos", produtos: "Produtos", vendas: "Vendas", servicos: "Serviços",
 };
 
 async function salvar(fd: FormData) {

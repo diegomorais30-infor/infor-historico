@@ -5,15 +5,30 @@ import { getContexto } from "@/lib/contexto";
 import { fmtData, hojeBR, moeda } from "@/lib/format";
 import { COR_ATRASO, COR_OK, COR_PRIORIDADE, COR_STATUS_OS, corSituacao, ROTULO_PRIORIDADE, STATUS_OS } from "@/lib/os";
 import { podeEditar, podeVer } from "@/lib/permissoes";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function ListaOS({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; prazo?: string; prioridade?: string; situacao?: string }> }) {
-  const { status, q, prazo, prioridade, situacao } = await searchParams;
+async function excluirOS(fd: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const { error } = await supabase.from("service_orders").delete().eq("id", String(fd.get("id")));
+  if (error) redirect("/os?erro=" + encodeURIComponent(error.message));
+  revalidatePath("/os");
+  redirect("/os");
+}
+
+
+export default async function ListaOS({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const sp = await searchParams;
+  const { status, q, prazo, prioridade, situacao } = sp;
+  const { eq, fatend, ftec, ftipo, forigem, ffilial, ftag, fobs, dpor, di, df, excluir, erro } = sp;
   const { supabase, perfil } = await getContexto();
   const editar = podeEditar(perfil?.role, (perfil as any)?.permissions, "os");
 
   const { data } = await supabase
     .from("service_orders")
-    .select("id, number, status, priority, situacao, warranty, tags, defect, deadline, entry_at, created_by, technician_id, clients(name, phone, mobile), equipment(code, brand, model)")
+    .select("id, number, status, priority, situacao, warranty, tags, defect, deadline, entry_at, closed_at, created_by, technician_id, tipo_os, origem, filial, observacoes, clients(name, phone, mobile), equipment(code, brand, model, serial_number)")
     .order("number", { ascending: false })
     .limit(500);
   const todas: any[] = data ?? [];
@@ -41,12 +56,27 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
     if (prioridade === "alta" && !["alta", "urgente"].includes(o.priority)) return false;
     if (prioridade && prioridade !== "alta" && o.priority !== prioridade) return false;
     if (situacao && o.situacao !== situacao) return false;
+    if (fatend && o.created_by !== fatend) return false;
+    if (ftec && o.technician_id !== ftec) return false;
+    if (ftipo && o.tipo_os !== ftipo) return false;
+    if (forigem && o.origem !== forigem) return false;
+    if (ffilial && o.filial !== ffilial) return false;
+    if (ftag && !(o.tags ?? []).includes(ftag)) return false;
+    if (fobs && !String(o.observacoes ?? "").toLowerCase().includes(fobs.toLowerCase())) return false;
+    if (eq && !`${o.equipment?.code ?? ""} ${o.equipment?.brand ?? ""} ${o.equipment?.model ?? ""} ${o.equipment?.serial_number ?? ""} ${o.defect ?? ""}`.toLowerCase().includes(eq.toLowerCase())) return false;
+    if (di || df) {
+      const d = String(dpor === "prazo" ? o.deadline : dpor === "fechamento" ? o.closed_at : o.entry_at ?? "").slice(0, 10);
+      if (!d || (di && d < di) || (df && d > df)) return false;
+    }
     if (!termo) return true;
     return [String(o.number), o.clients?.name, o.equipment?.code, o.equipment?.model, o.defect]
       .filter(Boolean)
       .some((t: string) => t.toLowerCase().includes(termo));
   });
 
+  const uniq = (k: string) => Array.from(new Set(todas.map((o) => o[k]).filter(Boolean))) as string[];
+  const todasTags = Array.from(new Set(todas.flatMap((o) => (o.tags ?? []) as string[])));
+  const alvoExcluir = excluir ? todas.find((o) => o.id === excluir) : null;
   const verFin = podeVer(perfil?.role, (perfil as any)?.permissions, "financeiro");
   const valores: Record<string, { prod: number; serv: number; desc: number }> = {};
   if (verFin && lista.length) {
@@ -112,6 +142,55 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
         ))}
       </div>
 
+      {erro && <div className="error" style={{ marginBottom: 12 }}>{erro}</div>}
+      {alvoExcluir && editar && (
+        <div className="card" style={{ marginBottom: 12, borderColor: "#dc2626" }}>
+          <p style={{ marginTop: 0 }}>Excluir a OS <b>#{alvoExcluir.number}</b> ({alvoExcluir.clients?.name ?? "sem cliente"})? Isso não pode ser desfeito.</p>
+          <form action={excluirOS} style={{ display: "flex", gap: 8 }}>
+            <input type="hidden" name="id" value={alvoExcluir.id} />
+            <button className="btn primary" style={{ background: "#dc2626" }}>Sim, excluir</button>
+            <Link className="btn secondary" href="/os">Cancelar</Link>
+          </form>
+        </div>
+      )}
+
+      <details className="card" style={{ marginBottom: 12 }} open={!!(eq || fatend || ftec || ftipo || forigem || ffilial || ftag || fobs || di || df)}>
+        <summary style={{ cursor: "pointer", fontWeight: 700 }}>⚙ Filtros avançados</summary>
+        <form className="grid g4" style={{ marginTop: 10 }}>
+          {status && <input type="hidden" name="status" value={status} />}
+          {q && <input type="hidden" name="q" value={q} />}
+          <label className="field">Equipamento / defeito<input name="eq" defaultValue={eq ?? ""} placeholder="Nome, série, modelo, defeito" /></label>
+          <label className="field">Observações<input name="fobs" defaultValue={fobs ?? ""} /></label>
+          <label className="field">Atendente
+            <select name="fatend" defaultValue={fatend ?? ""}><option value="">Todos</option>{(pessoas ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.full_name}</option>)}</select>
+          </label>
+          <label className="field">Técnico
+            <select name="ftec" defaultValue={ftec ?? ""}><option value="">Todos</option>{(pessoas ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.full_name}</option>)}</select>
+          </label>
+          <label className="field">Tipo
+            <select name="ftipo" defaultValue={ftipo ?? ""}><option value="">Todos</option>{uniq("tipo_os").map((v) => <option key={v}>{v}</option>)}</select>
+          </label>
+          <label className="field">Origem
+            <select name="forigem" defaultValue={forigem ?? ""}><option value="">Todas</option>{uniq("origem").map((v) => <option key={v}>{v}</option>)}</select>
+          </label>
+          <label className="field">Filial
+            <select name="ffilial" defaultValue={ffilial ?? ""}><option value="">Todas</option>{uniq("filial").map((v) => <option key={v}>{v}</option>)}</select>
+          </label>
+          <label className="field">Tag
+            <select name="ftag" defaultValue={ftag ?? ""}><option value="">Todas</option>{todasTags.map((v) => <option key={v}>{v}</option>)}</select>
+          </label>
+          <label className="field">Filtrar data por
+            <select name="dpor" defaultValue={dpor ?? "entrada"}><option value="entrada">Entrada</option><option value="prazo">Prazo</option><option value="fechamento">Fechamento</option></select>
+          </label>
+          <label className="field">Data inicial<input type="date" name="di" defaultValue={di ?? ""} /></label>
+          <label className="field">Data final<input type="date" name="df" defaultValue={df ?? ""} /></label>
+          <div style={{ alignSelf: "end", display: "flex", gap: 8 }}>
+            <button className="btn primary">Aplicar</button>
+            <Link className="btn secondary" href="/os">Limpar</Link>
+          </div>
+        </form>
+      </details>
+
       <form className="card" style={{ marginBottom: 12, display: "flex", gap: 10 }}>
         {status && <input type="hidden" name="status" value={status} />}
         <input name="q" defaultValue={q ?? ""} placeholder="Buscar por número, cliente, equipamento ou defeito" style={{ flex: 1 }} />
@@ -176,7 +255,15 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
                   <td>{((o.tags ?? []) as string[]).map((tg) => <span key={tg} className="os-tag" style={{ marginRight: 4 }}>{tg}</span>)}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     <Link className="btn primary" href={`/os/${o.id}`} title="Editar">✎</Link>{" "}
-                    <Link className="btn secondary" href={`/os/${o.id}/imprimir`} title="Imprimir">🖨</Link>
+                    <Link className="btn secondary" href={`/os/${o.id}/imprimir`} title="Imprimir">🖨</Link>{" "}
+                    <details style={{ display: "inline-block", position: "relative" }}>
+                      <summary className="btn secondary" style={{ listStyle: "none", cursor: "pointer" }} title="Mais ações">☰</summary>
+                      <div className="card" style={{ position: "absolute", right: 0, zIndex: 20, minWidth: 170, padding: 6, display: "grid", gap: 4, textAlign: "left" }}>
+                        <Link href={`/os/${o.id}`}>👁 Visualizar</Link>
+                        <Link href={`/os/${o.id}?aba=itens`}>🧰 Produtos/Serviços</Link>
+                        {editar && <Link href={`/os?excluir=${o.id}`} style={{ color: "#dc2626" }}>🗑 Excluir</Link>}
+                      </div>
+                    </details>
                   </td>
                 </tr>
               );

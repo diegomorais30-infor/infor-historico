@@ -11,8 +11,14 @@ export default async function NotasFiscais() {
   const lista: any[] = data ?? [];
   return (
     <main className="wrap" style={{ maxWidth: 900 }}>
-      <h1 className="title">Notas fiscais</h1>
-      <p className="muted">As notas são emitidas fora do sistema. Aqui ficam registradas as ordens de serviço que têm o número da nota informado.</p>
+      <div className="headrow">
+        <h1 className="title">Notas fiscais</h1>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link className="btn secondary" href="/notas-fiscais/config">Configurações de NF</Link>
+          <Link className="btn secondary" href="/notas-fiscais/tipos">Tipos de serviço</Link>
+        </div>
+      </div>
+      <p className="muted">Por enquanto as notas são emitidas fora do sistema. Aqui ficam registradas as ordens de serviço que têm o número da nota informado. A emissão automática de NFS-e será ativada depois da configuração fiscal e da escolha do emissor.</p>
       <div className="card" style={{ overflowX: "auto", marginTop: 12 }}>
         <table>
           <thead><tr><th>OS</th><th>Cliente</th><th>Nota fiscal</th><th>Fechamento</th></tr></thead>

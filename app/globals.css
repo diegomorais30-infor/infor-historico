@@ -215,3 +215,12 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .menu-pop{position:absolute;right:0;top:110%;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0002;min-width:190px;padding:6px}
 .menu-pop a{display:block;padding:9px 12px;border-radius:8px;color:var(--ink);font-size:13px}
 .menu-pop a:hover{background:var(--soft)}
+
+/* Menu lateral com grupos que abrem/fecham (como no Inforos) */
+.side-nav .side-grp{display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;border-radius:8px;border:0;background:none;font:inherit;font-weight:700;font-size:12px;color:var(--ink);cursor:pointer;text-align:left}
+.side-nav .side-grp:hover{background:var(--soft)}
+.side-nav .side-grp.tem-ativo{color:#fff}
+.side-nav .side-grp .ico{width:22px;text-align:center}
+.side-nav .side-grp .chev{margin-left:auto;transition:transform .15s;opacity:.7}
+.side-nav .side-grp.aberto .chev{transform:rotate(180deg)}
+.side-nav a.sub{border-left:2px solid var(--line);margin-left:22px;border-radius:0 8px 8px 0;padding-left:14px}

@@ -106,6 +106,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         // Configurações
         M("/usuarios", "Usuários e permissões", "⚙️", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/emitente", "Emitente", "🏢", papel === "admin", { grupo: "Configurações", sub: true }),
+        M("/anexos", "Anexos", "📎", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/filiais", "Filiais", "🏬", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/garantias/termos", "Termos de garantia", "📜", papel === "admin", { grupo: "Configurações", sub: true }),
         M("/cadastros/checklist", "Checklist", "☑️", papel === "admin", { grupo: "Configurações", sub: true }),

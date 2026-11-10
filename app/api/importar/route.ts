@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
     const get = async (tab: string) => { const { data } = await db.from(tab).select("id, legacy_ref").eq("company_id", EMPRESA).not("legacy_ref", "is", null); return new Map((data ?? []).map((c: any) => [String(c.legacy_ref), c.id])); };
     const [mc, ms, mo, mv] = await Promise.all([get("clients"), get("suppliers"), get("service_orders"), get("sales")]);
     const linhas = (regs as any[]).map((r) => {
-      const valor = Math.max(num(r.valor) - num(r.desconto) + num(r.juros), 0);
+      const valor = Math.max(num(r.valor), 0); // no Inforos "valor" já é o líquido (bruto − desconto)
       const origem = String(r.origem ?? "");
       return {
         company_id: EMPRESA, legacy_ref: String(r.idFaturas), kind: String(r.tipo) === "receita" ? "receita" : "despesa",

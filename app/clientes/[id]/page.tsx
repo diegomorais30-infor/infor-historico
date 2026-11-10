@@ -17,7 +17,7 @@ export default async function Cliente({ params }: { params: Promise<{ id: string
     const { supabase } = await getContexto();
     const dados = lerCliente(fd);
     if (!dados.name) return;
-    await supabase.from("clients").update({ ...dados, active: fd.get("active") === "on" }).eq("id", id);
+    await supabase.from("clients").update(dados).eq("id", id);
     revalidatePath("/clientes");
     redirect("/clientes");
   }
@@ -36,9 +36,6 @@ export default async function Cliente({ params }: { params: Promise<{ id: string
       </div>
       <form action={salvar} className="card grid" style={{ gap: 14 }}>
         <CamposCliente c={c} />
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="checkbox" name="active" defaultChecked={c.active !== false} /> Cliente ativo
-        </label>
         <div><button type="submit" className="btn primary">Salvar</button></div>
       </form>
 

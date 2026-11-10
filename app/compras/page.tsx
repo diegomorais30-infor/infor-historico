@@ -15,6 +15,51 @@ async function nova() {
   redirect(`/compras/${(data as any).id}`);
 }
 
+const tag = (x: string, t: string) => x.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`))?.[1]?.trim() ?? "";
+const dec = (v: string) => Number(v.replace(",", ".")) || 0;
+const des = (v: string) => v.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'");
+
+async function importarXML(fd: FormData) {
+  "use server";
+  const { supabase } = await getContexto();
+  const arq = fd.get("xml");
+  if (!(arq instanceof File) || !arq.size) redirect("/compras?erro=" + encodeURIComponent("Escolha o arquivo XML da nota."));
+  const xml = await (arq as File).text();
+  if (!xml.includes("<det ") && !xml.includes("<det>")) redirect("/compras?erro=" + encodeURIComponent("XML inválido: não encontrei itens de NF-e."));
+  const emit = tag(xml, "emit");
+  const nome = des(tag(emit, "xNome"));
+  const doc = tag(emit, "CNPJ") || tag(emit, "CPF");
+  const nNF = tag(xml, "nNF");
+  const dh = tag(xml, "dhEmi") || tag(xml, "dEmi");
+  let supplier_id: string | null = null;
+  if (nome || doc) {
+    const { data: ex } = doc ? await supabase.from("suppliers").select("id").eq("document", doc).maybeSingle() : { data: null as any };
+    if (ex) supplier_id = (ex as any).id;
+    else {
+      const { data: nv } = await supabase.from("suppliers").insert({ name: nome || doc, document: doc || null, city: des(tag(emit, "xMun")) || null, state: tag(emit, "UF") || null }).select("id").single();
+      supplier_id = (nv as any)?.id ?? null;
+    }
+  }
+  const { data: ult } = await supabase.from("purchases").select("number").order("number", { ascending: false }).limit(1);
+  const number = Number((ult as any)?.[0]?.number ?? 0) + 1;
+  const { data: c, error } = await supabase
+    .from("purchases")
+    .insert({ number, supplier_id, purchased_at: dh ? new Date(dh).toISOString() : new Date().toISOString(), notes: nNF ? `Importada do XML da NF-e ${nNF}` : "Importada de XML" })
+    .select("id")
+    .single();
+  if (error || !c) redirect("/compras?erro=" + encodeURIComponent(error?.message ?? "Erro ao criar a compra."));
+  const { data: pecas } = await supabase.from("parts").select("id, name, barcode").limit(5000);
+  const dets = xml.match(/<det[\s>][\s\S]*?<\/det>/g) ?? [];
+  const linhas = dets.map((d) => {
+    const desc = des(tag(d, "xProd"));
+    const ean = tag(d, "cEAN");
+    const achada = (pecas ?? []).find((p: any) => (ean && ean !== "SEM GTIN" && p.barcode === ean) || p.name?.toLowerCase() === desc.toLowerCase());
+    return { purchase_id: (c as any).id, part_id: (achada as any)?.id ?? null, description: desc, quantity: dec(tag(d, "qCom")) || 1, unit_price: dec(tag(d, "vUnCom")), discount: dec(tag(d, "vDesc")) };
+  });
+  if (linhas.length) await supabase.from("purchase_items").insert(linhas);
+  redirect(`/compras/${(c as any).id}`);
+}
+
 export default async function Compras({ searchParams }: { searchParams: Promise<{ q?: string; de?: string; ate?: string; erro?: string }> }) {
   const { q, de, ate, erro } = await searchParams;
   const { supabase, perfil } = await getContexto();
@@ -61,9 +106,15 @@ export default async function Compras({ searchParams }: { searchParams: Promise<
           <div className="muted">Entradas de mercadoria dos fornecedores e os pedidos de compra</div>
         </div>
         {editar && (
-          <form action={nova}>
-            <button className="btn primary">+ Nova compra</button>
-          </form>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <form action={importarXML} encType="multipart/form-data" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input type="file" name="xml" accept=".xml,text/xml" aria-label="XML da NF-e" />
+              <button className="btn secondary">📄 Importar XML</button>
+            </form>
+            <form action={nova}>
+              <button className="btn primary">+ Nova compra</button>
+            </form>
+          </div>
         )}
       </div>
       {erro && <div className="error" style={{ marginBottom: 10 }}>{erro}</div>}

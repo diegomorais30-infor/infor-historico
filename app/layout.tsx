@@ -89,6 +89,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/dre", "DRE", "📑", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/metricas", "Métricas", "📊", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/comissoes", "Comissões", "🤝", v("financeiro"), { grupo: "Financeiro", sub: true }),
+        M("/financeiro/configuracoes", "Configurações", "⚙️", v("financeiro"), { grupo: "Financeiro", sub: true }),
         M("/notas-fiscais", "Notas fiscais", "🧮", v("financeiro"), { grupo: "Notas fiscais", sub: true }),
         M("/notas-fiscais/config", "Configurações de NF", "🧾", v("financeiro"), { grupo: "Notas fiscais", sub: true }),
         M("/notas-fiscais/tipos", "Tipos de serviço (NFS-e)", "🏷️", v("financeiro"), { grupo: "Notas fiscais", sub: true }),

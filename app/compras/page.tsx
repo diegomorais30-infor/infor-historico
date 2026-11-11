@@ -111,6 +111,8 @@ export default async function Compras({ searchParams }: { searchParams: Promise<
               <input type="file" name="xml" accept=".xml,text/xml" aria-label="XML da NF-e" />
               <button className="btn secondary">📄 Importar XML</button>
             </form>
+            <Link href="/compras/pedidos" className="btn secondary">📋 Pedidos de compra</Link>
+            <Link href="/fornecedores" className="btn secondary">+ Novo fornecedor</Link>
             <form action={nova}>
               <button className="btn primary">+ Nova compra</button>
             </form>

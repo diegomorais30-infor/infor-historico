@@ -50,6 +50,7 @@ export default async function NovaVenda({ searchParams }: { searchParams: Promis
             <option value="">Digite/escolha o cliente…</option>
             {(clientes ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          <Link href="/clientes/novo" style={{ fontSize: 13, color: "var(--link)" }}>+ Cliente (cadastrar um novo)</Link>
         </label>
         <label className="field">
           Vendedor

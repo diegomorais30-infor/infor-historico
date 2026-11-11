@@ -52,6 +52,24 @@ async function adicionarItem(fd: FormData) {
   redirect(volta(id));
 }
 
+async function adicionarKit(fd: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(fd.get("id"));
+  const kit = String(fd.get("kit") || "");
+  if (!kit) redirect(volta(id, "?erro=" + encodeURIComponent("Escolha um kit.")));
+  const { data: its } = await supabase.from("kit_items").select("part_id, quantity, parts(name)").eq("kit_id", kit);
+  if (!(its ?? []).length) redirect(volta(id, "?erro=" + encodeURIComponent("Esse kit não tem produtos cadastrados.")));
+  const { data: precos } = await supabase.from("part_prices").select("part_id, sale_price").in("part_id", (its ?? []).map((i: any) => i.part_id));
+  const pr = new Map((precos ?? []).map((x: any) => [x.part_id, Number(x.sale_price ?? 0)]));
+  await supabase.from("sale_items").insert((its ?? []).map((i: any) => ({
+    sale_id: id, kind: "produto", description: i.parts?.name ?? "Produto", quantity: Number(i.quantity), unit_price: pr.get(i.part_id) ?? 0, discount: 0, part_id: i.part_id,
+  })));
+  await recalcular(supabase, id);
+  revalidatePath(volta(id));
+  redirect(volta(id));
+}
+
 async function removerItem(fd: FormData) {
   "use server";
   const supabase = await createClient();
@@ -127,12 +145,13 @@ export default async function Venda({ params, searchParams }: { params: Promise<
   ]);
   const editFin = podeEditar(perfil?.role, (perfil as any)?.permissions, "financeiro");
   const aberta = !v.billed && editFin;
-  const [{ data: pecas }, { data: servs }] = aberta
+  const [{ data: pecas }, { data: servs }, { data: kits }] = aberta
     ? await Promise.all([
         supabase.from("parts").select("id, name").eq("active", true).order("name").limit(2000),
         supabase.from("catalog_services").select("id, name").eq("active", true).order("name"),
+        supabase.from("kits").select("id, name").order("name"),
       ])
-    : [{ data: [] as any[] }, { data: [] as any[] }];
+    : [{ data: [] as any[] }, { data: [] as any[] }, { data: [] as any[] }];
   const sub = (itens ?? []).reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unit_price) - Number(i.discount), 0);
   return (
     <main className="wrap" style={{ maxWidth: 900 }}>
@@ -170,6 +189,15 @@ export default async function Venda({ params, searchParams }: { params: Promise<
             <label className="field">Valor unit. (vazio = tabela)<input name="unit_price" inputMode="decimal" /></label>
             <label className="field">Desconto<input name="discount" inputMode="decimal" defaultValue="0" /></label>
             <div style={{ alignSelf: "end" }}><button className="btn primary">Adicionar item</button></div>
+          </form>
+        )}
+        {aberta && (kits ?? []).length > 0 && (
+          <form action={adicionarKit} className="grid g4" style={{ marginTop: 12 }}>
+            <input type="hidden" name="id" value={id} />
+            <label className="field" style={{ gridColumn: "span 2" }}>Kit
+              <select name="kit" defaultValue=""><option value="">Escolha um kit…</option>{(kits ?? []).map((k: any) => <option key={k.id} value={k.id}>{k.name}</option>)}</select>
+            </label>
+            <div style={{ alignSelf: "end" }}><button className="btn secondary">🧩 Adicionar kit</button></div>
           </form>
         )}
         <p style={{ textAlign: "right" }}>Itens {moeda(sub)} · Desconto {moeda(Number(v.discount))} · Frete {moeda(Number(v.freight))} · <b>Total {moeda(Number(v.total))}</b></p>

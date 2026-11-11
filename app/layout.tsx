@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/servicos", "Serviços", "🧰", v("os")),
         // Produtos
         M("/estoque", "Cadastrados", "📦", v("pecas"), { grupo: "Produtos", sub: true }),
-        M("/cadastros/kits", "Kits", "🧩", v("pecas"), { grupo: "Produtos", sub: true }),
+        M("/kits", "Kits", "🧩", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/cadastros/movimentacao", "Movimentação", "🔁", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/modulo/historico-estoque", "Histórico (Inforos)", "🕘", v("pecas"), { grupo: "Produtos", sub: true }),
         M("/cadastros/consumo-interno", "Consumo interno", "🧴", v("pecas"), { grupo: "Produtos", sub: true }),

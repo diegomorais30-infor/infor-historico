@@ -44,6 +44,7 @@ export default async function ImprimirOS({ params }: { params: Promise<{ id: str
   // QR "Veja o status da OS" (link público do orçamento/andamento) e fotos para a página de anexos
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://inforgest.com.br";
   const qr = o.approval_token ? await QRCode.toDataURL(`${site}/orcamento/${o.approval_token}`, { width: 260, margin: 0 }) : null;
+  const { data: checksImp } = await supabase.from("os_checklists").select("id, title, items, hidden").eq("order_id", id).eq("hidden", false).order("created_at");
   const { data: anexos } = await supabase.from("os_attachments").select("path").eq("order_id", id).order("path");
   let fotos: string[] = [];
   if ((anexos ?? []).length) {
@@ -160,6 +161,16 @@ export default async function ImprimirOS({ params }: { params: Promise<{ id: str
               </tbody>
             </table>
           )}
+
+          {/* Checklists preenchidos (os marcados para ocultar nas impressões ficam de fora) */}
+          {(checksImp ?? []).filter((ck: any) => (ck.items ?? []).some((it: any) => it.v)).map((ck: any) => (
+            <div key={ck.id}>
+              <div style={rotulo}>{ck.title}</div>
+              <p style={{ ...texto, fontSize: 11 }}>
+                {(ck.items ?? []).map((it: any) => `${it.v === "ok" ? "☑" : it.v === "nok" ? "☒" : it.v === "na" ? "◌" : "☐"} ${it.name}`).join("   ")}
+              </p>
+            </div>
+          ))}
 
           {/* Termo de entrada / garantia de saída */}
           {emp?.entry_terms && (<>

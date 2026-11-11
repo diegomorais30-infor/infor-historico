@@ -22,6 +22,7 @@ async function criar(fd: FormData) {
       origin: String(fd.get("origin") || "").trim() || null,
       notes: String(fd.get("notes") || "").trim() || null,
       warranty_term: String(fd.get("warranty_term") || "").trim() || null,
+      price_list_id: String(fd.get("price_list_id") || "") || null,
     })
     .select("id")
     .single();
@@ -33,10 +34,11 @@ export default async function NovaVenda({ searchParams }: { searchParams: Promis
   const { erro } = await searchParams;
   const { supabase, perfil } = await getContexto();
   if (!podeEditar(perfil?.role, (perfil as any)?.permissions, "financeiro")) redirect("/vendas");
-  const [{ data: clientes }, { data: termos }, { data: eu }] = await Promise.all([
+  const [{ data: clientes }, { data: termos }, { data: eu }, { data: listas }] = await Promise.all([
     supabase.from("clients").select("id, name").eq("active", true).order("name").limit(2000),
     supabase.from("warranty_terms").select("name").order("name"),
     supabase.from("profiles").select("full_name").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").maybeSingle(),
+    supabase.from("price_lists").select("id, name, adjust_percent").order("name"),
   ]);
   return (
     <main className="wrap" style={{ maxWidth: 900 }}>
@@ -63,6 +65,13 @@ export default async function NovaVenda({ searchParams }: { searchParams: Promis
         <label className="field">
           Origem do cliente
           <input name="origin" />
+        </label>
+        <label className="field">
+          Lista de preços
+          <select name="price_list_id" defaultValue="">
+            <option value="">Preço padrão</option>
+            {(listas ?? []).map((l: any) => <option key={l.id} value={l.id}>{l.name} ({Number(l.adjust_percent ?? 0) > 0 ? "+" : ""}{Number(l.adjust_percent ?? 0)}%)</option>)}
+          </select>
         </label>
         <label className="field">
           Termos de garantia

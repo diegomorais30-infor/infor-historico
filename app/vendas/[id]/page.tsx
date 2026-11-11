@@ -16,6 +16,11 @@ async function recalcular(supabase: any, id: string) {
   await supabase.from("sales").update({ total: Math.max(sub - Number(v?.discount ?? 0) + Number(v?.freight ?? 0), 0) }).eq("id", id);
 }
 
+async function fatorLista(supabase: any, saleId: string) {
+  const { data: v } = await supabase.from("sales").select("price_lists(adjust_percent)").eq("id", saleId).maybeSingle();
+  return 1 + Number((v as any)?.price_lists?.adjust_percent ?? 0) / 100;
+}
+
 async function adicionarItem(fd: FormData) {
   "use server";
   const supabase = await createClient();
@@ -29,13 +34,13 @@ async function adicionarItem(fd: FormData) {
     const { data: p } = await supabase.from("parts").select("name").eq("id", rid).single();
     const { data: pr } = await supabase.from("part_prices").select("sale_price").eq("part_id", rid).maybeSingle();
     description = description || (p as any)?.name || "Produto";
-    if (!unit_price) unit_price = Number((pr as any)?.sale_price ?? 0);
+    if (!unit_price) unit_price = Math.round(Number((pr as any)?.sale_price ?? 0) * (await fatorLista(supabase, id)) * 100) / 100;
     part_id = rid;
   } else if (tipo === "s" && rid) {
     const { data: sv } = await supabase.from("catalog_services").select("name").eq("id", rid).single();
     const { data: pr } = await supabase.from("service_prices").select("price").eq("service_id", rid).maybeSingle();
     description = description || (sv as any)?.name || "Serviço";
-    if (!unit_price) unit_price = Number((pr as any)?.price ?? 0);
+    if (!unit_price) unit_price = Math.round(Number((pr as any)?.price ?? 0) * (await fatorLista(supabase, id)) * 100) / 100;
   }
   if (!description) redirect(volta(id, "?erro=" + encodeURIComponent("Escolha um item ou descreva.")));
   await supabase.from("sale_items").insert({
@@ -62,8 +67,9 @@ async function adicionarKit(fd: FormData) {
   if (!(its ?? []).length) redirect(volta(id, "?erro=" + encodeURIComponent("Esse kit não tem produtos cadastrados.")));
   const { data: precos } = await supabase.from("part_prices").select("part_id, sale_price").in("part_id", (its ?? []).map((i: any) => i.part_id));
   const pr = new Map((precos ?? []).map((x: any) => [x.part_id, Number(x.sale_price ?? 0)]));
+  const fator = await fatorLista(supabase, id);
   await supabase.from("sale_items").insert((its ?? []).map((i: any) => ({
-    sale_id: id, kind: "produto", description: i.parts?.name ?? "Produto", quantity: Number(i.quantity), unit_price: pr.get(i.part_id) ?? 0, discount: 0, part_id: i.part_id,
+    sale_id: id, kind: "produto", description: i.parts?.name ?? "Produto", quantity: Number(i.quantity), unit_price: Math.round((pr.get(i.part_id) ?? 0) * fator * 100) / 100, discount: 0, part_id: i.part_id,
   })));
   await recalcular(supabase, id);
   revalidatePath(volta(id));

@@ -50,7 +50,8 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
 
   const termo = (q ?? "").trim().toLowerCase();
   const lista = todas.filter((o) => {
-    if (status && o.status !== status) return false;
+    if (status === "trabalhando") { if (!["entrada", "orcamento", "aberto", "andamento", "pausado"].includes(o.status)) return false; }
+    else if (status && status !== "todas" && o.status !== status) return false;
     if (!status && ["faturado", "finalizado", "cancelado"].includes(o.status)) return false;
     if (prazo && (encerrada(o) || faixaPrazo(o) !== prazo)) return false;
     if (prioridade === "alta" && !["alta", "urgente"].includes(o.priority)) return false;

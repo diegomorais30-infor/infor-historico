@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-export type ItemMenu = { href: string; nome: string; icone: string; badge?: number; grupo?: string; sub?: boolean };
+export type ItemMenu = { href: string; nome: string; icone: string; badge?: number; grupo?: string; sub?: boolean; secao?: string; contagem?: number };
 
 const GRUPO_ICONE: Record<string, string> = {
   Produtos: "📦",
@@ -18,6 +18,7 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
   const pathname = usePathname();
   const busca = useSearchParams();
   const [aberto, setAberto] = useState(false);
+  const [q, setQ] = useState("");
 
   // chaves de query usadas por itens do mesmo caminho (ex.: /os?status=...), para marcar só o item certo
   const chavesPorCaminho = useMemo(() => {
@@ -53,6 +54,9 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
     setGrupoAberto(grupoAtivo);
   }, [pathname, busca, grupoAtivo]);
 
+  const termo = q.trim().toLowerCase();
+  const achados = termo ? itens.filter((i) => (i.nome + " " + (i.grupo ?? "")).toLowerCase().includes(termo)) : [];
+
   const totalDoGrupo = (g: string) => itens.filter((i) => i.grupo === g).reduce((t, i) => t + (i.badge ?? 0), 0);
 
   return (
@@ -65,8 +69,22 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
           ☰
         </button>
       </div>
+      <div className="side-busca">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔎 Achar no menu" aria-label="Achar no menu" />
+      </div>
       <nav className="side-nav">
-        {itens.map((i, idx) => {
+        {termo && (
+          <>
+            {achados.length === 0 && <span className="muted" style={{ padding: "8px 12px", fontSize: 12 }}>Nada encontrado</span>}
+            {achados.map((i, idx) => (
+              <Link key={i.href + idx} href={i.href} onClick={() => { setAberto(false); setQ(""); }} className={ativoItem(i) ? "ativo" : ""}>
+                <span className="ico" aria-hidden>{i.icone}</span>
+                <span>{i.nome}{i.grupo ? <small className="muted"> · {i.grupo}</small> : null}</span>
+              </Link>
+            ))}
+          </>
+        )}
+        {!termo && itens.map((i, idx) => {
           const cabecalho =
             i.grupo && itens[idx - 1]?.grupo !== i.grupo ? (
               <button
@@ -81,10 +99,12 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
                 <span className="chev" aria-hidden>▾</span>
               </button>
             ) : null;
+          const secao = i.secao && itens[idx - 1]?.secao !== i.secao ? <div className="side-secao">{i.secao}</div> : null;
           const oculto = !!i.grupo && grupoAberto !== i.grupo;
           const ativo = ativoItem(i);
           return (
             <span key={i.href + idx} style={{ display: "contents" }}>
+              {secao}
               {cabecalho}
               {!oculto && (
                 <Link href={i.href} onClick={() => setAberto(false)} className={(ativo ? "ativo" : "") + (i.sub ? " sub" : "")}>
@@ -93,6 +113,7 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
                   </span>
                   <span>{i.nome}</span>
                   {!!i.badge && <span className="pill">{i.badge}</span>}
+                  {i.contagem != null && <span className="pill-n">{i.contagem.toLocaleString("pt-BR")}</span>}
                 </Link>
               )}
             </span>

@@ -6,13 +6,13 @@ export default async function PaginaEtiquetas() {
   const { supabase, perfil } = await getContexto();
   const { data } = await supabase
     .from("equipment")
-    .select("id, code, brand, model, serial_number, asset_tag, qr_token, location, contract_id, label_accepted, clients(name)")
+    .select("id, code, brand, model, serial_number, asset_tag, qr_token, location, contract_id, vinculo, label_accepted, clients(name)")
     .neq("status", "inactive")
     .order("code", { ascending: true });
   const { data: emp } = await supabase.from("companies").select("slug").maybeSingle();
 
   const empresa = (perfil as any)?.companies;
-  const itens = (data ?? []).filter((e: any) => e.contract_id || e.label_accepted).map((e: any) => ({
+  const itens = (data ?? []).filter((e: any) => e.vinculo === "contrato" || e.label_accepted).map((e: any) => ({
     id: e.id as string,
     code: e.code as string,
     marca: [e.brand, e.model].filter(Boolean).join(" "),

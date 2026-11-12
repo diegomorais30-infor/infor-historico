@@ -19,6 +19,20 @@ async function limparPatrimonio(formData: FormData) {
   redirect(volta + (volta.includes("?") ? "&" : "?") + "aviso=" + encodeURIComponent(error ? error.message : `Patrimônio removido de ${ids.length} equipamento(s).`));
 }
 
+// Marca os equipamentos selecionados como Contrato ou Avulso (não apaga nada; o histórico de manutenção é mantido).
+async function marcarVinculo(formData: FormData) {
+  "use server";
+  const ids = formData.getAll("ids").map(String).filter(Boolean);
+  const vinculo = String(formData.get("vinculo")) === "contrato" ? "contrato" : "avulso";
+  const volta = String(formData.get("volta") || "/equipamentos");
+  const msg = (m: string) => redirect(volta + (volta.includes("?") ? "&" : "?") + "aviso=" + encodeURIComponent(m));
+  if (!ids.length) msg("Marque ao menos um equipamento.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("equipment").update({ vinculo }).in("id", ids);
+  revalidatePath("/equipamentos");
+  msg(error ? error.message : `${ids.length} equipamento(s) marcado(s) como ${vinculo === "contrato" ? "contrato" : "avulso"}.`);
+}
+
 // Só administrador; só avulsos (sem contrato). Apaga também histórico de manutenções/leituras desses equipamentos.
 async function excluirMarcados(formData: FormData) {
   "use server";
@@ -29,7 +43,7 @@ async function excluirMarcados(formData: FormData) {
   if (perfil?.role !== "admin") msg("Apenas administradores podem excluir equipamentos.");
   if (!ids.length) msg("Marque ao menos um equipamento.");
   if (!formData.get("confirmo")) msg("Marque “Confirmo” para excluir.");
-  const { data: avulsos } = await supabase.from("equipment").select("id").in("id", ids).is("contract_id", null);
+  const { data: avulsos } = await supabase.from("equipment").select("id").in("id", ids).is("contract_id", null).eq("vinculo", "avulso");
   const ok = (avulsos ?? []).map((x: any) => x.id);
   if (!ok.length) msg("Só equipamentos de clientes avulsos (sem contrato) podem ser excluídos.");
   await supabase.from("os_equipment").delete().in("equipment_id", ok);
@@ -44,13 +58,13 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
   const editar = podeEditar(perfil?.role, perfil?.permissions, "equipamentos");
   const { data } = await supabase
     .from("equipment")
-    .select("id, code, equipment_number, asset_tag, equipment_type, brand, model, serial_number, location, status, color, contract_id, clients(name)")
+    .select("id, code, equipment_number, asset_tag, equipment_type, brand, model, serial_number, location, status, color, contract_id, vinculo, clients(name)")
     .order("equipment_number", { ascending: false })
     .limit(2000);
   const t = (q ?? "").trim().toLowerCase();
   const filtro = f ?? "todos";
   const lista = (data ?? []).filter((e: any) =>
-    filtro === "avulso" ? !e.contract_id : filtro === "contrato" ? !!e.contract_id : filtro === "com" ? !!e.asset_tag : filtro === "sem" ? !e.asset_tag : filtro === "avulso-com" ? !e.contract_id && !!e.asset_tag : true
+    filtro === "avulso" ? e.vinculo === "avulso" : filtro === "contrato" ? e.vinculo === "contrato" : filtro === "com" ? !!e.asset_tag : filtro === "sem" ? !e.asset_tag : filtro === "avulso-com" ? e.vinculo === "avulso" && !!e.asset_tag : true
   ).filter(
     (e: any) => !t || `${e.asset_tag ?? ""} ${e.brand ?? ""} ${e.model ?? ""} ${e.serial_number ?? ""} ${e.clients?.name ?? ""} ${e.equipment_type ?? ""}`.toLowerCase().includes(t)
   );
@@ -71,8 +85,8 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
         <input name="q" defaultValue={q} placeholder="Buscar patrimônio, modelo, série, cliente ou tipo" style={{ flex: 1, minWidth: 200 }} />
         <select name="f" defaultValue={filtro}>
           <option value="todos">Todos</option>
-          <option value="contrato">Com contrato</option>
-          <option value="avulso">Avulsos (sem contrato)</option>
+          <option value="contrato">Contrato</option>
+          <option value="avulso">Avulsos (cliente que presta serviço)</option>
           <option value="avulso-com">Avulsos com patrimônio</option>
           <option value="com">Com patrimônio</option>
           <option value="sem">Sem patrimônio</option>
@@ -85,6 +99,14 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
         <p className="muted" style={{ margin: "0 0 10px" }}>
           Clientes avulsos não têm patrimônio próprio. Marque os equipamentos e remova o número:{" "}
           <button className="btn secondary" type="submit" formAction={limparPatrimonio}>Remover patrimônio dos marcados</button>
+        </p>
+      )}
+      {editar && (
+        <p className="muted" style={{ margin: "0 0 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          Marcar os selecionados como:
+          <button className="btn secondary" type="submit" formAction={marcarVinculo} name="vinculo" value="contrato">Contrato</button>
+          <button className="btn secondary" type="submit" formAction={marcarVinculo} name="vinculo" value="avulso">Avulso (cliente)</button>
+          <span>Cliente que volta? Marque como avulso em vez de excluir: o histórico fica guardado.</span>
         </p>
       )}
       {perfil?.role === "admin" && (
@@ -116,7 +138,7 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
                 <td>{e.serial_number ?? "—"}</td>
                 <td>{e.color ?? "—"}</td>
                 <td>{e.location ?? "—"}</td>
-                <td>{e.contract_id ? "Contrato" : "Avulso"}</td>
+                <td><span className="badge">{e.vinculo === "contrato" ? "Contrato" : "Avulso"}</span></td>
                 <td><span className="badge">{e.status}</span></td>
                 <td style={{ whiteSpace: "nowrap" }}><Link className="btn primary" href={`/equipamentos/${e.id}`} title="Editar">✎</Link></td>
               </tr>

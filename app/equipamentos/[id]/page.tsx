@@ -17,6 +17,16 @@ async function removerPatrimonio(formData: FormData) {
   redirect(`/equipamentos/${id}`);
 }
 
+async function salvarVinculo(formData: FormData) {
+  "use server";
+  const id = String(formData.get("id"));
+  const vinculo = String(formData.get("vinculo")) === "contrato" ? "contrato" : "avulso";
+  const supabase = await createClient();
+  await supabase.from("equipment").update({ vinculo }).eq("id", id);
+  revalidatePath(`/equipamentos/${id}`);
+  redirect(`/equipamentos/${id}`);
+}
+
 // Cliente avulso: o código/QR só é liberado quando houver aceite (do cliente ou nosso) para colar a etiqueta.
 async function aceitarEtiqueta(formData: FormData) {
   "use server";
@@ -34,8 +44,8 @@ async function excluirEquipamento(formData: FormData) {
   const { supabase, perfil } = await getContexto();
   const volta = `/equipamentos/${id}`;
   if (perfil?.role !== "admin") redirect(volta);
-  const { data: eq } = await supabase.from("equipment").select("contract_id").eq("id", id).single();
-  if (!eq || eq.contract_id) redirect(`/equipamentos?aviso=${encodeURIComponent("Só é possível excluir equipamentos de clientes avulsos (sem contrato).")}`);
+  const { data: eq } = await supabase.from("equipment").select("contract_id, vinculo").eq("id", id).single();
+  if (!eq || eq.contract_id || eq.vinculo !== "avulso") redirect(`/equipamentos?aviso=${encodeURIComponent("Só é possível excluir equipamentos de clientes avulsos (sem contrato).")}`);
   await supabase.from("os_equipment").delete().eq("equipment_id", id);
   const { error } = await supabase.from("equipment").delete().eq("id", id);
   revalidatePath("/equipamentos");
@@ -97,7 +107,7 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
             <span className="badge">{STATUS_EQUIPAMENTO[e.status] ?? e.status}</span>
           </div>
         </div>
-        {e.contract_id || (e as any).label_accepted ? (
+        {(e as any).vinculo === "contrato" || (e as any).label_accepted ? (
           <QR code={e.code} token={e.qr_token} tag={e.asset_tag} slug={(emp as any)?.slug ?? null} />
         ) : (
           <div className="card" style={{ maxWidth: 280 }}>
@@ -112,6 +122,17 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
           </div>
         )}
       </div>
+
+      <form action={salvarVinculo} className="card" style={{ marginBottom: 14, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <input type="hidden" name="id" value={e.id} />
+        <b>Vínculo:</b>
+        <select name="vinculo" defaultValue={(e as any).vinculo ?? "avulso"} disabled={!editar || !!e.contract_id}>
+          <option value="contrato">Contrato</option>
+          <option value="avulso">Avulso (cliente que presta serviço)</option>
+        </select>
+        {editar && !e.contract_id && <button className="btn secondary" type="submit">Salvar</button>}
+        <span className="muted">{e.contract_id ? "Ligado a um contrato." : "Cliente voltou? O histórico de manutenção fica sempre guardado."}</span>
+      </form>
 
       <div className="grid g4">
         <div className="card">
@@ -138,7 +159,7 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
         </div>
       </div>
 
-      {perfil?.role === "admin" && !e.contract_id && (
+      {perfil?.role === "admin" && (e as any).vinculo === "avulso" && !e.contract_id && (
         <form action={excluirEquipamento} className="card" style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <input type="hidden" name="id" value={e.id} />
           <span className="muted" style={{ flex: 1, minWidth: 220 }}>Máquina de cliente avulso (não é patrimônio da Infor). Excluir apaga também o histórico de manutenções e leituras deste equipamento.</span>

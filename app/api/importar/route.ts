@@ -131,6 +131,7 @@ export async function POST(req: NextRequest) {
         entry_at: dt(l.dataInicial) ? String(l.dataInicial).replace(" ", "T") + "-03:00" : null,
         closed_at: fechada ? (dt(l.dataFinal) ?? dt(l.conclusao) ?? dt(l.dataFaturado)) && String(dt(l.dataFinal) ?? dt(l.conclusao) ?? dt(l.dataFaturado)).replace(" ", "T") + "-03:00" : null,
         stock_deducted: fechada,
+        location: s(l.localizacao),
         legacy_data: { lista: l, detalhe: d },
       };
       const { data: os, error } = await db.from("service_orders").upsert(linha, { onConflict: "company_id,legacy_ref" }).select("id").single();
@@ -160,6 +161,12 @@ export async function POST(req: NextRequest) {
       const desc = num(d.totais?.desconto ?? l.desconto), adi = num(d.totais?.adiantamento);
       if (desc || adi) await db.from("order_finance").upsert({ order_id: os.id, company_id: EMPRESA, discount: desc, advance: adi, payment_method: s(d.formasPagamento) }, { onConflict: "order_id" });
       ok++;
+    }
+  } else if (tipo === "os_local") {
+    // atualiza só a Localização das OS (campo novo do Inforos), sem recriar itens
+    for (const r of registros as any[]) {
+      const { error } = await db.from("service_orders").update({ location: String(r.loc ?? "").trim() || null }).eq("company_id", EMPRESA).eq("legacy_ref", String(r.ref));
+      if (error) erros.push(`OS ${r.ref}: ${error.message}`); else ok++;
     }
   } else if (tipo === "produtos") {
     const num = (x: any) => { const n = Number(x); return Number.isFinite(n) ? n : 0; };

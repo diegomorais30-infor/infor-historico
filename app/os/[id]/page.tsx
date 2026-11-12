@@ -255,7 +255,7 @@ async function salvar(formData: FormData) {
   const status = String(formData.get("status"));
   const priority = String(formData.get("priority"));
   const texto = (k: string) => String(formData.get(k) || "").trim() || null;
-  const { data: antes } = await supabase.from("service_orders").select("status, situacao").eq("id", id).single();
+  const { data: antes } = await supabase.from("service_orders").select("status, situacao, atendimento").eq("id", id).single();
   const { error } = await supabase
     .from("service_orders")
     .update({
@@ -274,6 +274,7 @@ async function salvar(formData: FormData) {
       origem: texto("origem"),
       termo: texto("termo"),
       tipo_os: texto("tipo_os"),
+      ...(formData.get("atendimento") ? { atendimento: formData.get("atendimento") === "assistencia" ? "assistencia" : "externo" } : {}),
       filial: texto("filial"),
       observacoes: texto("observacoes"),
       ...(texto("atendente_id") ? { created_by: texto("atendente_id") } : {}),
@@ -284,6 +285,9 @@ async function salvar(formData: FormData) {
   if (a.status && a.status !== status) await registrar(supabase, id, `Status alterado de <b>${STATUS_OS[a.status] ?? a.status}</b> para <b>${STATUS_OS[status] ?? status}</b>`);
   const sit = texto("situacao");
   if ((a.situacao ?? null) !== sit) await registrar(supabase, id, `Situação alterada de <b>${a.situacao ?? "—"}</b> para <b>${sit ?? "—"}</b>`);
+  const at = formData.get("atendimento");
+  const NOME_AT: Record<string, string> = { externo: "Externo", assistencia: "Na assistência" };
+  if (at && a.atendimento && a.atendimento !== at) await registrar(supabase, id, `Atendimento alterado de <b>${NOME_AT[a.atendimento] ?? a.atendimento}</b> para <b>${NOME_AT[String(at)] ?? at}</b>`);
   revalidatePath(`/os/${id}`);
   redirect(`/os/${id}?aba=detalhes&ok=1`);
 }
@@ -658,6 +662,12 @@ export default async function DetalheOS({
               </div>
               <label className="field">Solicitante
                 <input name="contact_name" defaultValue={o.contact_name ?? ""} disabled={!editar} />
+              </label>
+              <label className="field">Atendimento
+                <select name="atendimento" defaultValue={o.atendimento ?? "externo"} disabled={!editar}>
+                  <option value="externo">Externo (painel)</option>
+                  <option value="assistencia">Na assistência</option>
+                </select>
               </label>
               <label className="field">Tipo O.S
                 <select name="tipo_os" defaultValue={o.tipo_os ?? ""} disabled={!editar}>

@@ -28,6 +28,7 @@ async function criar(formData: FormData) {
     technician_id: String(formData.get("technician_id") || ""),
     defect: String(formData.get("defect") || ""),
     contact_name: String(formData.get("contact_name") || ""),
+    atendimento: formData.get("atendimento") === "assistencia" ? "assistencia" : "externo",
   });
   const { data, error } = await supabase.from("service_orders").insert(dados).select("id").single();
   if (error || !data) redirect("/os/nova?erro=" + encodeURIComponent(error?.message ?? "Não foi possível criar a OS."));
@@ -79,6 +80,13 @@ export default async function NovaOS({
                 {e.code} · {e.brand ?? ""} {e.model ?? ""}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="field">
+          Atendimento
+          <select name="atendimento" defaultValue="externo">
+            <option value="externo">Externo (vai para o painel)</option>
+            <option value="assistencia">Na assistência</option>
           </select>
         </label>
         <label className="field">

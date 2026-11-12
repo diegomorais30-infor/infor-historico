@@ -17,6 +17,31 @@ async function removerPatrimonio(formData: FormData) {
   redirect(`/equipamentos/${id}`);
 }
 
+// Cliente avulso: o código/QR só é liberado quando houver aceite (do cliente ou nosso) para colar a etiqueta.
+async function aceitarEtiqueta(formData: FormData) {
+  "use server";
+  const id = String(formData.get("id"));
+  const supabase = await createClient();
+  await supabase.from("equipment").update({ label_accepted: true }).eq("id", id);
+  revalidatePath(`/equipamentos/${id}`);
+  redirect(`/equipamentos/${id}`);
+}
+
+// Só administrador; só equipamento de cliente avulso (sem contrato) — não é patrimônio nosso.
+async function excluirEquipamento(formData: FormData) {
+  "use server";
+  const id = String(formData.get("id"));
+  const { supabase, perfil } = await getContexto();
+  const volta = `/equipamentos/${id}`;
+  if (perfil?.role !== "admin") redirect(volta);
+  const { data: eq } = await supabase.from("equipment").select("contract_id").eq("id", id).single();
+  if (!eq || eq.contract_id) redirect(`/equipamentos?aviso=${encodeURIComponent("Só é possível excluir equipamentos de clientes avulsos (sem contrato).")}`);
+  await supabase.from("os_equipment").delete().eq("equipment_id", id);
+  const { error } = await supabase.from("equipment").delete().eq("id", id);
+  revalidatePath("/equipamentos");
+  redirect(`/equipamentos?aviso=${encodeURIComponent(error ? "Não foi possível excluir: " + error.message : "Equipamento excluído.")}`);
+}
+
 export default async function DetalheEquipamento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase, perfil } = await getContexto();
@@ -72,7 +97,20 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
             <span className="badge">{STATUS_EQUIPAMENTO[e.status] ?? e.status}</span>
           </div>
         </div>
-        <QR code={e.code} token={e.qr_token} tag={e.asset_tag} slug={(emp as any)?.slug ?? null} />
+        {e.contract_id || (e as any).label_accepted ? (
+          <QR code={e.code} token={e.qr_token} tag={e.asset_tag} slug={(emp as any)?.slug ?? null} />
+        ) : (
+          <div className="card" style={{ maxWidth: 280 }}>
+            <b>Equipamento de cliente avulso</b>
+            <p className="muted" style={{ margin: "6px 0" }}>O código/QR só é gerado se o cliente (ou a Infor) aceitar colar a etiqueta.</p>
+            {editar && (
+              <form action={aceitarEtiqueta}>
+                <input type="hidden" name="id" value={e.id} />
+                <button className="btn primary" type="submit">Aceitou a etiqueta — gerar código</button>
+              </form>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid g4">
@@ -99,6 +137,15 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
           <b>{fmtData(e.next_preventive_date)}</b>
         </div>
       </div>
+
+      {perfil?.role === "admin" && !e.contract_id && (
+        <form action={excluirEquipamento} className="card" style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <input type="hidden" name="id" value={e.id} />
+          <span className="muted" style={{ flex: 1, minWidth: 220 }}>Máquina de cliente avulso (não é patrimônio da Infor). Excluir apaga também o histórico de manutenções e leituras deste equipamento.</span>
+          <label style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" name="confirmo" required /> Confirmo</label>
+          <button className="btn secondary" type="submit" style={{ color: "#b91c1c" }}>🗑 Excluir equipamento</button>
+        </form>
+      )}
 
       <section className="card" style={{ marginTop: 18 }}>
         <div className="headrow">

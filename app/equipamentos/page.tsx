@@ -19,6 +19,25 @@ async function limparPatrimonio(formData: FormData) {
   redirect(volta + (volta.includes("?") ? "&" : "?") + "aviso=" + encodeURIComponent(error ? error.message : `Patrimônio removido de ${ids.length} equipamento(s).`));
 }
 
+// Só administrador; só avulsos (sem contrato). Apaga também histórico de manutenções/leituras desses equipamentos.
+async function excluirMarcados(formData: FormData) {
+  "use server";
+  const ids = formData.getAll("ids").map(String).filter(Boolean);
+  const volta = String(formData.get("volta") || "/equipamentos");
+  const msg = (m: string) => redirect(volta + (volta.includes("?") ? "&" : "?") + "aviso=" + encodeURIComponent(m));
+  const { supabase, perfil } = await getContexto();
+  if (perfil?.role !== "admin") msg("Apenas administradores podem excluir equipamentos.");
+  if (!ids.length) msg("Marque ao menos um equipamento.");
+  if (!formData.get("confirmo")) msg("Marque “Confirmo” para excluir.");
+  const { data: avulsos } = await supabase.from("equipment").select("id").in("id", ids).is("contract_id", null);
+  const ok = (avulsos ?? []).map((x: any) => x.id);
+  if (!ok.length) msg("Só equipamentos de clientes avulsos (sem contrato) podem ser excluídos.");
+  await supabase.from("os_equipment").delete().in("equipment_id", ok);
+  const { error } = await supabase.from("equipment").delete().in("id", ok);
+  revalidatePath("/equipamentos");
+  msg(error ? "Não foi possível excluir: " + error.message : `${ok.length} equipamento(s) avulso(s) excluído(s).` + (ok.length < ids.length ? " Os com contrato foram mantidos." : ""));
+}
+
 export default async function Equipamentos({ searchParams }: { searchParams: Promise<{ q?: string; f?: string; aviso?: string }> }) {
   const { q, f, aviso } = await searchParams;
   const { supabase, perfil } = await getContexto();
@@ -60,12 +79,19 @@ export default async function Equipamentos({ searchParams }: { searchParams: Pro
         </select>
         <button className="btn secondary">Filtrar</button>
       </form>
-      <form action={limparPatrimonio}>
+      <form>
       <input type="hidden" name="volta" value={`/equipamentos?f=${filtro}${q ? "&q=" + encodeURIComponent(q) : ""}`} />
       {editar && (
         <p className="muted" style={{ margin: "0 0 10px" }}>
           Clientes avulsos não têm patrimônio próprio. Marque os equipamentos e remova o número:{" "}
-          <button className="btn secondary" type="submit">Remover patrimônio dos marcados</button>
+          <button className="btn secondary" type="submit" formAction={limparPatrimonio}>Remover patrimônio dos marcados</button>
+        </p>
+      )}
+      {perfil?.role === "admin" && (
+        <p className="muted" style={{ margin: "0 0 10px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          Máquinas de clientes avulsos que não são patrimônio da Infor: marque e exclua (apaga também o histórico delas).
+          <label style={{ display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" name="confirmo" /> Confirmo</label>
+          <button className="btn secondary" type="submit" formAction={excluirMarcados} style={{ color: "#b91c1c" }}>🗑 Excluir avulsos marcados</button>
         </p>
       )}
       <section className="card" style={{ overflowX: "auto" }}>

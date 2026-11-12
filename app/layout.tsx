@@ -62,7 +62,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/chamados", "Chamados", "📩", v("chamados"), { badge: abertos, secao: A }),
         M("/orcamentos", "Lista de orçamentos", "📝", v("os"), { grupo: "Orçamentos", sub: true, secao: A }),
         M("/modulo/modelos-orcamento", "Modelos de orçamento", "📄", v("os"), { grupo: "Orçamentos", sub: true, secao: A }),
-        M("/os", "Todas", "🛠️", v("os"), { grupo: "Ordens de serviço", sub: true, secao: A, contagem: osTodas }),
+        M("/os?status=todas", "Todas", "🛠️", v("os"), { grupo: "Ordens de serviço", sub: true, secao: A, contagem: osTodas }),
         M("/os?status=trabalhando", "Trabalhando", "⚡", v("os"), { grupo: "Ordens de serviço", sub: true, secao: A, contagem: osTrab }),
         M("/os?status=entrada", "Entrada", "📥", v("os"), { grupo: "Ordens de serviço", sub: true, secao: A }),
         M("/os?status=orcamento", "Orçamento", "📝", v("os"), { grupo: "Ordens de serviço", sub: true, secao: A }),

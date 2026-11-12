@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 // Mantém a sessão do Supabase renovada e protege as telas internas.
 // Públicas: /login, /cadastro e a página do QR code (/e/...).
 function ehPublica(path: string) {
-  return path === "/login" || path === "/cadastro" || path.startsWith("/e/") || path.startsWith("/p/") || path.startsWith("/orcamento/") || path === "/manifest.webmanifest" || path === "/sw.js" || path === "/api/push/chamado" || path === "/api/importar";
+  return path === "/login" || path === "/cadastro" || path.startsWith("/e/") || path.startsWith("/p/") || path.startsWith("/orcamento/") || path === "/manifest.webmanifest" || path === "/sw.js" || path === "/api/push/chamado" || path === "/api/push/painel" || path === "/api/importar";
 }
 
 export async function proxy(request: NextRequest) {

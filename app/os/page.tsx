@@ -28,7 +28,7 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
 
   const { data } = await supabase
     .from("service_orders")
-    .select("id, number, status, priority, situacao, warranty, tags, defect, deadline, entry_at, closed_at, created_by, technician_id, tipo_os, origem, filial, observacoes, clients(name, phone, mobile), equipment(code, brand, model, serial_number)")
+    .select("id, number, status, priority, situacao, location, warranty, tags, defect, deadline, entry_at, closed_at, created_by, technician_id, tipo_os, origem, filial, observacoes, clients(name, phone, mobile), equipment(code, brand, model, serial_number)")
     .order("number", { ascending: false })
     .limit(500);
   const todas: any[] = data ?? [];
@@ -207,6 +207,7 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
               <th>Cliente / equipamento</th>
               <th>Status</th>
               <th>Atendente / técnico</th>
+              <th>Localização</th>
               <th>Prioridade</th>
               <th>Entrada</th>
               <th>Prazo</th>
@@ -243,6 +244,7 @@ export default async function ListaOS({ searchParams }: { searchParams: Promise<
                     <div>{nome(o.created_by)}</div>
                     <div className="muted">{nome(o.technician_id)}</div>
                   </td>
+                  <td>{o.location ?? "—"}</td>
                   <td><span className="selo" style={{ background: COR_PRIORIDADE[o.priority] }}>{ROTULO_PRIORIDADE[o.priority] ?? o.priority}</span></td>
                   <td>{fmtData(o.entry_at)}</td>
                   <td>

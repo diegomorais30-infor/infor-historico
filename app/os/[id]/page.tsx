@@ -263,6 +263,7 @@ async function salvar(formData: FormData) {
       priority,
       warranty: formData.get("warranty") === "sim",
       situacao: texto("situacao"),
+      location: texto("location"),
       deadline: texto("deadline"),
       technician_id: texto("technician_id"),
       report: texto("report"),
@@ -633,6 +634,9 @@ export default async function DetalheOS({
               <label className="field">Termo
                 <input name="termo" list="termos" defaultValue={o.termo ?? ""} disabled={!editar} />
                 <datalist id="termos">{(termosGar ?? []).map((x: any) => <option key={x.name} value={x.name} />)}</datalist>
+              </label>
+              <label className="field">Localização
+                <input name="location" defaultValue={o.location ?? ""} disabled={!editar} placeholder="Ex.: estoque, recepção, CPD" />
               </label>
               <label className="field">Situação
                 <input name="situacao" list="situacoes" defaultValue={o.situacao ?? ""} disabled={!editar} />

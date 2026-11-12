@@ -21,8 +21,11 @@ async function salvarVinculo(formData: FormData) {
   "use server";
   const id = String(formData.get("id"));
   const vinculo = String(formData.get("vinculo")) === "contrato" ? "contrato" : "avulso";
+  const contrato = String(formData.get("contract_id") || "") || null;
   const supabase = await createClient();
-  await supabase.from("equipment").update({ vinculo }).eq("id", id);
+  // Avulso nunca fica ligado a contrato; contrato escolhido força o vínculo "contrato".
+  const upd = vinculo === "avulso" ? { vinculo, contract_id: null } : { vinculo, contract_id: contrato };
+  await supabase.from("equipment").update(upd).eq("id", id);
   revalidatePath(`/equipamentos/${id}`);
   redirect(`/equipamentos/${id}`);
 }
@@ -60,6 +63,11 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
   const { data: e } = await supabase.from("equipment").select("*,clients(name)").eq("id", id).single();
   if (!e) notFound();
   const { data: emp } = await supabase.from("companies").select("slug").maybeSingle();
+  const { data: contratos } = await supabase
+    .from("contracts")
+    .select("id, code, contract_number, status, monthly_fee")
+    .eq("client_id", (e as any).client_id)
+    .order("created_at", { ascending: false });
 
   const { data: manutencoes } = await supabase
     .from("maintenance")
@@ -126,12 +134,20 @@ export default async function DetalheEquipamento({ params }: { params: Promise<{
       <form action={salvarVinculo} className="card" style={{ marginBottom: 14, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <input type="hidden" name="id" value={e.id} />
         <b>Vínculo:</b>
-        <select name="vinculo" defaultValue={(e as any).vinculo ?? "avulso"} disabled={!editar || !!e.contract_id}>
+        <select name="vinculo" defaultValue={(e as any).vinculo ?? "avulso"} disabled={!editar}>
           <option value="contrato">Contrato</option>
           <option value="avulso">Avulso (cliente que presta serviço)</option>
         </select>
-        {editar && !e.contract_id && <button className="btn secondary" type="submit">Salvar</button>}
-        <span className="muted">{e.contract_id ? "Ligado a um contrato." : "Cliente voltou? O histórico de manutenção fica sempre guardado."}</span>
+        <select name="contract_id" defaultValue={e.contract_id ?? ""} disabled={!editar}>
+          <option value="">Sem contrato específico</option>
+          {(contratos ?? []).map((c: any) => (
+            <option key={c.id} value={c.id}>{c.code ?? `#${c.contract_number}`} · {c.status}</option>
+          ))}
+        </select>
+        {editar && <button className="btn secondary" type="submit">Salvar</button>}
+        <span className="muted">
+          {(contratos ?? []).length ? "Contratos deste cliente." : "Este cliente não tem contrato cadastrado."} Escolher um contrato marca como “Contrato”; “Avulso” remove a ligação. O histórico de manutenção fica sempre guardado.
+        </span>
       </form>
 
       <div className="grid g4">

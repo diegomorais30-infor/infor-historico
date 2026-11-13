@@ -97,6 +97,12 @@ export async function POST(req: NextRequest) {
       }).eq("company_id", EMPRESA).eq("legacy_ref", String(r.idEquipamentos));
       if (error) erros.push(error.message); else ok++;
     }
+  } else if (tipo === "vincular_os") {
+    // liga uma OS lançada à mão no InforGest à OS equivalente do Inforos (sem sobrescrever os dados dela)
+    for (const r of registros as any[]) {
+      const { error } = await db.from("service_orders").update({ legacy_ref: String(r.l.idOs), legacy_data: { lista: r.l } }).eq("company_id", EMPRESA).eq("number", Number(r.numero)).is("legacy_ref", null);
+      if (error) erros.push(error.message); else ok++;
+    }
   } else if (tipo === "os") {
     const norm = (x: any) => String(x ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const STATUS: Record<string, string> = { entrada: "entrada", orcamento: "orcamento", aberto: "aberto", andamento: "andamento", "em andamento": "andamento", pausado: "pausado", concluido: "concluido", faturado: "faturado", finalizado: "finalizado", cancelado: "cancelado" };

@@ -18,35 +18,27 @@ export const metadata = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: cl } = await (supabase.auth as any).getClaims();
+  const user: any = cl?.claims ? { id: cl.claims.sub } : null;
 
   let empresa = "";
   let papel = "";
   let perms: any = {};
   let abertos = 0;
-  if (user) {
-    const { count } = await supabase
-      .from("service_requests")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "open");
-    abertos = count ?? 0;
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, permissions, companies(name)")
-      .eq("id", user.id)
-      .single();
-    empresa = (data as any)?.companies?.name ?? "";
-    papel = (data as any)?.role ?? "";
-    perms = (data as any)?.permissions ?? {};
-  }
-
   let osTodas = 0;
   let osTrab = 0;
   if (user) {
-    const r1 = await supabase.from("service_orders").select("*", { count: "exact", head: true });
-    const r2 = await supabase.from("service_orders").select("*", { count: "exact", head: true }).in("status", ["entrada", "orcamento", "aberto", "andamento", "pausado"]);
+    const [rc, rp, r1, r2] = await Promise.all([
+      supabase.from("service_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
+      supabase.from("profiles").select("role, permissions, companies(name)").eq("id", user.id).single(),
+      supabase.from("service_orders").select("*", { count: "exact", head: true }),
+      supabase.from("service_orders").select("*", { count: "exact", head: true }).in("status", ["entrada", "orcamento", "aberto", "andamento", "pausado"]),
+    ]);
+    abertos = rc.count ?? 0;
+    const data: any = rp.data;
+    empresa = data?.companies?.name ?? "";
+    papel = data?.role ?? "";
+    perms = data?.permissions ?? {};
     osTodas = r1.count ?? 0;
     osTrab = r2.count ?? 0;
   }

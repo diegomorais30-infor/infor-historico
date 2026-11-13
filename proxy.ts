@@ -29,9 +29,9 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims confere o token localmente (sem ir ao Supabase a cada clique)
+  const { data: cl } = await (supabase.auth as any).getClaims();
+  const user: any = cl?.claims ? { id: cl.claims.sub, user_metadata: cl.claims.user_metadata ?? {} } : null;
 
   const path = request.nextUrl.pathname;
 

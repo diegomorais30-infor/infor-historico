@@ -411,8 +411,9 @@ async function custoInterno(formData: FormData) {
   "use server";
   const supabase = await createClient();
   const order_id = String(formData.get("order_id"));
+  const aba = String(formData.get("aba") || "itens");
   const valor = Number(String(formData.get("amount") || "0").replace(",", ".")) || 0;
-  if (valor <= 0) redirect(voltar(order_id, "itens", "&erro=" + encodeURIComponent("Informe o valor do custo.")));
+  if (valor <= 0) redirect(voltar(order_id, aba, "&erro=" + encodeURIComponent("Informe o valor do custo.")));
   const { data: os } = await supabase.from("service_orders").select("number").eq("id", order_id).single();
   const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
   const pago = formData.get("pago") === "on";
@@ -430,10 +431,48 @@ async function custoInterno(formData: FormData) {
     paid_at: pago ? hoje : null,
     notes: String(formData.get("notes") || "").trim() || null,
   });
-  if (error) redirect(voltar(order_id, "itens", "&erro=" + encodeURIComponent(error.message)));
+  if (error) redirect(voltar(order_id, aba, "&erro=" + encodeURIComponent(error.message)));
   await registrar(supabase, order_id, `Custo interno lançado: <b>${desc}</b>`);
   revalidatePath(`/os/${order_id}`);
-  redirect(voltar(order_id, "itens"));
+  redirect(voltar(order_id, aba));
+}
+
+async function adiantamento(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const valor = Number(String(formData.get("amount") || "0").replace(",", ".")) || 0;
+  if (valor <= 0) redirect(voltar(order_id, "detalhes", "&erro=" + encodeURIComponent("Informe o valor do adiantamento.")));
+  const [{ data: os }, { data: fin }] = await Promise.all([
+    supabase.from("service_orders").select("number, client_id, clients(name)").eq("id", order_id).single(),
+    supabase.from("order_finance").select("*").eq("order_id", order_id).maybeSingle(),
+  ]);
+  const o: any = os;
+  const f: any = fin ?? {};
+  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const novo = Number(f.advance ?? 0) + valor;
+  const { error: e1 } = await supabase.from("order_finance").upsert(
+    { order_id, discount: Number(f.discount ?? 0), advance: novo, payment_method: String(formData.get("payment_method") || "").trim() || f.payment_method || null, due_date: f.due_date ?? null },
+    { onConflict: "order_id" }
+  );
+  if (e1) redirect(voltar(order_id, "detalhes", "&erro=" + encodeURIComponent(e1.message)));
+  const pago = formData.get("pago") === "on";
+  const { data: ja } = await supabase.from("finance_entries").select("id, paid_at").eq("order_id", order_id).eq("origin", "os_adiantamento").maybeSingle();
+  const dados: any = { amount: novo, due_date: String(formData.get("due_date") || "") || hoje };
+  if (pago) dados.paid_at = hoje;
+  if (ja) {
+    await supabase.from("finance_entries").update(dados).eq("id", (ja as any).id);
+  } else {
+    const { error } = await supabase.from("finance_entries").insert({
+      kind: "receita", category: "Adiantamento", party: o?.clients?.name ?? null, client_id: o?.client_id ?? null, order_id,
+      origin: "os_adiantamento", description: `Adiantamento OS - #${o?.number}`, competence: hoje, paid_at: pago ? hoje : null,
+      payment_method: String(formData.get("payment_method") || "").trim() || null, notes: String(formData.get("notes") || "").trim() || null, ...dados,
+    });
+    if (error) redirect(voltar(order_id, "detalhes", "&erro=" + encodeURIComponent(error.message)));
+  }
+  await registrar(supabase, order_id, `Adiantamento lançado: <b>${moeda(valor)}</b>`);
+  revalidatePath(`/os/${order_id}`);
+  redirect(voltar(order_id, "detalhes", "&ok=1"));
 }
 
 async function removerCusto(formData: FormData) {
@@ -643,8 +682,11 @@ export default async function DetalheOS({
                 <input name="location" defaultValue={o.location ?? ""} disabled={!editar} placeholder="Ex.: estoque, recepção, CPD" />
               </label>
               <label className="field">Situação
-                <input name="situacao" list="situacoes" defaultValue={o.situacao ?? ""} disabled={!editar} />
-                <datalist id="situacoes">{SITUACOES_OS.map((x) => <option key={x} value={x} />)}</datalist>
+                <select name="situacao" defaultValue={o.situacao ?? ""} disabled={!editar}>
+                  <option value="">—</option>
+                  {o.situacao && !SITUACOES_OS.includes(o.situacao) && <option value={o.situacao}>{o.situacao}</option>}
+                  {SITUACOES_OS.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
               </label>
               <label className="field">Status
                 <select name="status" defaultValue={o.status} disabled={!editar}>
@@ -727,6 +769,44 @@ export default async function DetalheOS({
                 </div>
               )}
             </form>
+
+            {editFin && (
+              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                <details style={{ flex: "1 1 100%" }}>
+                  <summary className="btn secondary" style={{ display: "inline-block", cursor: "pointer" }}>Adiantamento</summary>
+                  <form action={adiantamento} className="grid g4" style={{ marginTop: 10 }}>
+                    <input type="hidden" name="order_id" value={o.id} />
+                    <label className="field">Valor (R$)<input name="amount" inputMode="decimal" required /></label>
+                    <label className="field">Vencimento<input type="date" name="due_date" /></label>
+                    <label className="field">Forma de pagamento<input name="payment_method" list="formas" /></label>
+                    <label className="field">Anotações<input name="notes" /></label>
+                    <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Pago</label>
+                    <div style={{ alignSelf: "end" }}><button className="btn primary">Lançar adiantamento</button></div>
+                  </form>
+                </details>
+                <details style={{ flex: "1 1 100%" }}>
+                  <summary className="btn secondary" style={{ display: "inline-block", cursor: "pointer" }}>Custo Interno</summary>
+                  <form action={custoInterno} className="grid g4" style={{ marginTop: 10 }}>
+                    <input type="hidden" name="order_id" value={o.id} />
+                    <input type="hidden" name="aba" value="detalhes" />
+                    <label className="field">Fornecedor / empresa<input name="party" /></label>
+                    <label className="field">Descrição<input name="description" placeholder={`Custo OS - #${o.number}`} /></label>
+                    <label className="field">Categoria<input name="category" defaultValue="Custos" /></label>
+                    <label className="field">Valor (R$)<input name="amount" inputMode="decimal" required /></label>
+                    <label className="field">Vencimento<input type="date" name="due_date" /></label>
+                    <label className="field">Anotações<input name="notes" /></label>
+                    <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Pago</label>
+                    <div style={{ alignSelf: "end" }}><button className="btn primary">Lançar custo</button></div>
+                  </form>
+                </details>
+                {o.status !== "faturado" && o.status !== "finalizado" && (
+                  <form action={faturar}>
+                    <input type="hidden" name="order_id" value={o.id} />
+                    <button className="btn primary">Faturar</button>
+                  </form>
+                )}
+              </div>
+            )}
 
             <div id="aprovacao" style={{ marginTop: 18, borderTop: "1px solid var(--line)", paddingTop: 14 }}>
               <h3 style={{ marginTop: 0 }}>Aprovação do orçamento</h3>

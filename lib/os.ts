@@ -19,14 +19,22 @@ export const PRIORIDADE_OS: Record<string, string> = {
 
 // Sugestões de "situação" (campo livre; o usuário pode digitar outra)
 export const SITUACOES_OS = [
-  "Enviar p/ cliente",
-  "Aguardando resposta do cliente",
-  "Comprar peça",
-  "Aguardando peça",
-  "Testes finais",
-  "Postar nos Correios",
-  "Aguardando retirada",
-  "Sem conserto",
+  "Retorno O.S",
+  "Pendente",
+  "Em Análise",
+  "Enviar p/ Cliente",
+  "Aguard. Resposta",
+  "Terceirizado",
+  "Comprar Peça",
+  "Aguard. Peça",
+  "Recusada",
+  "Sem Reparo",
+  "Autorizada",
+  "Testes Finais",
+  "Postar Correios",
+  "Realizado",
+  "Abandono",
+  "Descarte",
 ];
 
 // Fluxo principal da OS (barra de progresso) e quem cuida de cada etapa
@@ -66,8 +74,8 @@ export const COR_ATRASO = "#f74d4d";
 
 export function corSituacao(texto?: string | null) {
   const t = (texto ?? "").toLowerCase();
-  if (/recus|sem conserto|cancel/.test(t)) return COR_ATRASO;
-  if (/realiz|autoriz|aprov|conclu|retirad|pago/.test(t)) return COR_OK;
+  if (/recus|sem conserto|sem reparo|abandon|descart|cancel/.test(t)) return COR_ATRASO;
+  if (/realiz|autoriz|aprov|conclu|retirad|pago|testes finais|postar correios/.test(t)) return COR_OK;
   if (t) return COR_PENDENTE;
   return "#6b7a8d";
 }

@@ -285,3 +285,26 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .side-secao{margin:14px 12px 4px;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted,#6b7280)}
 .side-nav .pill-n{margin-left:auto;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--ink)}
 .side-nav a.ativo .pill-n{background:#ffffff33;color:#fff}
+
+/* ===== Celular: versão compacta (tudo menor para caber mais na tela) ===== */
+@media(max-width:800px){
+  html,body{font-size:13px}
+  .wrap{padding:8px !important}
+  .card{padding:10px;border-radius:12px;margin-bottom:10px}
+  .title,h1{font-size:18px}
+  h2{font-size:15px;margin:0 0 8px}
+  h3{font-size:14px}
+  .stat,.fat-v{font-size:20px;margin-top:4px}
+  .g4,.g3,.g2{gap:8px}
+  input,select,textarea{font-size:16px !important;min-height:38px;padding:7px 9px}
+  .btn,button{min-height:38px;font-size:13px;padding:7px 11px}
+  .side-head{padding:6px 10px;font-size:17px}
+  .side-head .brand{font-size:17px}
+  .side-toggle{padding:5px 11px;font-size:19px}
+  .side-nav a{padding:9px 10px;font-size:13px}
+  .side-nav a.sub{padding:7px 10px 7px 26px;font-size:12px}
+  .card table,.wrap table:not(.sem-grade){font-size:12px;min-width:480px}
+  .card th,.card td,.wrap table:not(.sem-grade) th,.wrap table:not(.sem-grade) td{padding:6px 5px;font-size:12px}
+  .badge,.selo,.tag-r,.tag-d{font-size:10.5px}
+  .userbar{padding:4px 10px;font-size:12px}
+}

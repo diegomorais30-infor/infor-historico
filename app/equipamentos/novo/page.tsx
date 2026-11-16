@@ -29,6 +29,8 @@ export default function NovoEquipamento() {
   });
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  // Equipamento já cadastrado em outro cliente (mesmo patrimônio ou nº de série): oferece transferir.
+  const [existente, setExistente] = useState<any>(null);
 
   useEffect(() => {
     createClient()
@@ -51,6 +53,25 @@ export default function NovoEquipamento() {
       return;
     }
     setLoading(true);
+    setExistente(null);
+    const sb = createClient();
+    const filtros: string[] = [];
+    if (form.asset_tag.trim()) filtros.push(`asset_tag.eq.${form.asset_tag.trim()}`);
+    if (form.serial_number.trim()) filtros.push(`serial_number.eq.${form.serial_number.trim()}`);
+    if (filtros.length) {
+      const { data: ja } = await sb
+        .from("equipment")
+        .select("id, code, asset_tag, serial_number, brand, model, client_id, clients(name)")
+        .or(filtros.join(","))
+        .neq("status", "inactive")
+        .neq("client_id", form.client_id)
+        .limit(1);
+      if (ja && ja.length) {
+        setExistente(ja[0]);
+        setLoading(false);
+        return;
+      }
+    }
     // Campos vazios viram null: data vazia ("") derrubava o cadastro no banco.
     const { data, error } = await createClient()
       .from("equipment")
@@ -63,6 +84,31 @@ export default function NovoEquipamento() {
       return;
     }
     router.push(`/equipamentos/${data.id}`);
+    router.refresh();
+  }
+
+  async function transferir() {
+    if (!existente) return;
+    setLoading(true);
+    setMsg("");
+    const sb = createClient();
+    const { data: ctr } = await sb.from("contracts").select("id").eq("client_id", form.client_id).eq("status", "active");
+    const contrato = ctr && ctr.length === 1 ? ctr[0].id : null;
+    const upd: Record<string, any> = {
+      client_id: form.client_id,
+      contract_id: contrato,
+      vinculo: contrato ? "contrato" : "avulso",
+      status: "active",
+    };
+    if (form.location.trim()) upd.location = form.location.trim();
+    if (form.installation_date) upd.installation_date = form.installation_date;
+    const { error } = await sb.from("equipment").update(upd).eq("id", existente.id);
+    if (error) {
+      setMsg(error.message);
+      setLoading(false);
+      return;
+    }
+    router.push(`/equipamentos/${existente.id}`);
     router.refresh();
   }
 
@@ -102,6 +148,22 @@ export default function NovoEquipamento() {
             ))}
           </select>
         </label>
+        {existente && (
+          <div className="card" style={{ gridColumn: "1/-1", borderColor: "#f59e0b" }}>
+            <b>Este equipamento já está cadastrado em outro cliente.</b>
+            <p style={{ margin: "6px 0" }}>
+              {existente.code} · {existente.brand} {existente.model} · patrimônio {existente.asset_tag ?? "—"} · série {existente.serial_number ?? "—"}
+              <br />
+              Cliente atual: <b>{existente.clients?.name}</b>
+            </p>
+            <p className="muted" style={{ margin: "6px 0" }}>
+              Se ele saiu de lá e foi para o cliente escolhido acima, transfira: o código, o QR code e o histórico são mantidos.
+            </p>
+            <button type="button" className="btn primary" disabled={loading} onClick={transferir}>
+              Transferir para este cliente
+            </button>
+          </div>
+        )}
         {msg && (
           <div className="error" style={{ gridColumn: "1/-1" }}>
             {msg}

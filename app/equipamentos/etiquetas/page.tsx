@@ -28,7 +28,7 @@ export default async function PaginaEtiquetas() {
         <Link href="/equipamentos" className="link">← Equipamentos</Link>
         <h1 className="title">Etiquetas de QR Code</h1>
         <p className="muted">
-          O QR de cada etiqueta usa o número do patrimônio (o mesmo número que já está colado na impressora). Folha A4 adesiva com 4 etiquetas (2 × 2). Equipamentos da própria Infor (estoque) sempre aparecem. Os de clientes avulsos só aparecem aqui depois que o cliente (ou a Infor) aceitar a etiqueta, na página do equipamento. Escolha os equipamentos e clique em imprimir. Na janela de
+          O QR de cada etiqueta usa o número do patrimônio (o mesmo número que já está colado na impressora). Folha A4 adesiva; escolha quantas etiquetas por folha. Equipamentos da própria Infor (estoque) sempre aparecem. Os de clientes avulsos só aparecem aqui depois que o cliente (ou a Infor) aceitar a etiqueta, na página do equipamento. Escolha os equipamentos e clique em imprimir. Na janela de
           impressão, use tamanho A4, escala 100% e margens “nenhuma”.
         </p>
       </div>

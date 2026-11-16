@@ -18,6 +18,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
   const [busca, setBusca] = useState("");
   const [cli, setCli] = useState("");
   const [soTag, setSoTag] = useState(true);
+  const [porFolha, setPorFolha] = useState(4);
   const clientes = useMemo(() => Array.from(new Set(itens.map((i) => i.cliente).filter(Boolean))).sort((a, b) => a.localeCompare(b)), [itens]);
   const visiveis = useMemo(() => {
     const t = busca.trim().toLowerCase();
@@ -50,8 +51,11 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
     setSel(n);
   }
 
+  const GRADES: Record<number, [number, number]> = { 1: [1, 1], 2: [1, 2], 4: [2, 2], 6: [2, 3], 8: [2, 4], 9: [3, 3], 12: [3, 4], 15: [3, 5], 20: [4, 5] };
+  const [cols, linhas] = GRADES[porFolha] ?? [2, 2];
+  const k = Math.min(210 / cols / 105, 297 / linhas / 148.5);
   const folhas: Item[][] = [];
-  for (let i = 0; i < escolhidos.length; i += 4) folhas.push(escolhidos.slice(i, i + 4));
+  for (let i = 0; i < escolhidos.length; i += porFolha) folhas.push(escolhidos.slice(i, i + porFolha));
 
   return (
     <>
@@ -81,6 +85,14 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
             ))}
           </select>
           <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            Etiquetas por folha
+            <select value={porFolha} onChange={(e) => setPorFolha(Number(e.target.value))}>
+              {Object.keys(GRADES).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <input type="checkbox" checked={soTag} onChange={(e) => setSoTag(e.target.checked)} /> Só com patrimônio
           </label>
         </div>
@@ -100,11 +112,11 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
 
       <div className="folhas">
         {folhas.map((f, n) => (
-          <div className="folha" key={n}>
+          <div className="folha" key={n} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${linhas}, 1fr)`, ["--k" as any]: k }}>
             {f.map((i) => (
               <div className="etq" key={i.id}>
                 <img src="/logo-infor.jpg" alt={empresa || "Infor Cartuchos"} className="etq-logo" />
-                <div className="etq-cta">Escaneie para ver o histórico ou pedir manutenção</div>
+                <div className="etq-cta">Precisou de assistência técnica? Escaneie o qr code e logo será atendido.</div>
                 {qrs[i.id] ? <img src={qrs[i.id]} alt={`QR ${i.code}`} className="etq-qr" /> : <div className="etq-qr" />}
                 <div className="etq-code">{i.tag ? `Patrimônio ${i.tag}` : i.code}</div>
                 {i.marca && <div className="etq-linha">{i.marca}</div>}

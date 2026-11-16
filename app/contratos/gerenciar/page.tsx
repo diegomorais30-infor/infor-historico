@@ -6,6 +6,8 @@ import { getContexto } from "@/lib/contexto";
 import { podeEditar } from "@/lib/permissoes";
 import { STATUS_CONTRATO, moeda } from "@/lib/format";
 
+const dataHora = (v: string) => new Date(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+
 async function salvar(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -29,6 +31,8 @@ export default async function Gerenciar({ searchParams }: { searchParams: Promis
   const pode = podeEditar(perfil?.role, (perfil as any)?.permissions, "contratos");
   const { data } = await supabase.from("contracts").select("id, code, status, monthly_fee, clients(name), equipment(count)").order("code");
   const todos: any[] = data ?? [];
+  const { data: hist } = await supabase.from("contract_history").select("id, contract_id, old_fee, new_fee, old_status, new_status, changed_by_name, created_at").order("created_at", { ascending: false }).limit(300);
+  const codigoPorId = new Map(todos.map((c) => [c.id, c]));
   const q = (sp.q ?? "").trim().toLowerCase();
   const f = sp.f ?? "";
   const lista = todos.filter((c) => (!f || c.status === f) && (!q || `${c.code} ${c.clients?.name ?? ""}`.toLowerCase().includes(q)));
@@ -93,6 +97,33 @@ export default async function Gerenciar({ searchParams }: { searchParams: Promis
               </tr>
             ))}
             {!lista.length && <tr><td colSpan={6} className="muted">Nenhum contrato encontrado.</td></tr>}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card" style={{ marginTop: 14 }}>
+        <h2>Histórico de alterações</h2>
+        <table className="table">
+          <thead><tr><th>Quando</th><th>Contrato</th><th>Cliente</th><th>Valor</th><th>Situação</th><th>Quem</th></tr></thead>
+          <tbody>
+            {(hist ?? [])
+              .filter((h: any) => !q || `${codigoPorId.get(h.contract_id)?.code ?? ""} ${codigoPorId.get(h.contract_id)?.clients?.name ?? ""}`.toLowerCase().includes(q))
+              .map((h: any) => {
+                const c = codigoPorId.get(h.contract_id);
+                const mudouValor = Number(h.old_fee) !== Number(h.new_fee);
+                const mudouSit = h.old_status !== h.new_status;
+                return (
+                  <tr key={h.id}>
+                    <td>{dataHora(h.created_at)}</td>
+                    <td>{c?.code ?? "—"}</td>
+                    <td>{c?.clients?.name ?? "—"}</td>
+                    <td>{mudouValor ? `${moeda(h.old_fee)} → ${moeda(h.new_fee)}` : "—"}</td>
+                    <td>{mudouSit ? `${STATUS_CONTRATO[h.old_status] ?? h.old_status} → ${STATUS_CONTRATO[h.new_status] ?? h.new_status}` : "—"}</td>
+                    <td>{h.changed_by_name ?? "—"}</td>
+                  </tr>
+                );
+              })}
+            {!(hist ?? []).length && <tr><td colSpan={6} className="muted">Nenhuma alteração registrada ainda. A partir de agora, cada mudança de valor ou situação aparece aqui.</td></tr>}
           </tbody>
         </table>
       </section>

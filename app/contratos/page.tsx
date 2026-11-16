@@ -28,9 +28,10 @@ export default async function Contratos() {
           <p className="muted">Locação com mensalidade, franquia de páginas e excedente.</p>
         </div>
         {gerente && (
-          <Link className="btn primary" href="/contratos/novo">
-            + Novo contrato
-          </Link>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <Link className="btn secondary" href="/contratos/gerenciar">Gerenciar (ativar / valores)</Link>
+            <Link className="btn primary" href="/contratos/novo">+ Novo contrato</Link>
+          </div>
         )}
       </div>
 

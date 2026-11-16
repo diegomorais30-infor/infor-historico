@@ -181,6 +181,7 @@ export default async function Leituras({
         <Link className={ver === "contrato" ? "btn primary" : "btn secondary"} href={base({ ver: "contrato" })}>Por contrato</Link>
         <Link className={escopo === "locacao" ? "btn primary" : "btn secondary"} href={base({ escopo: "locacao" })}>Só locação</Link>
         <Link className={escopo === "todas" ? "btn primary" : "btn secondary"} href={base({ escopo: "todas" })}>Todas as impressoras</Link>
+        <Link className="btn secondary" href="/contratos/gerenciar">⚙️ Gerenciar contratos (ativar / valor)</Link>
       </div>
 
       <form className="card" style={{ marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -233,6 +234,7 @@ export default async function Leituras({
                     </label>
                     <button className="btn secondary">Salvar valores</button>
                     <Link className="btn secondary" href={`/contratos/${cid}`}>Fechar mês / fatura</Link>
+                    <Link className="btn secondary" href={`/contratos/gerenciar?q=${encodeURIComponent(c.code ?? "")}`}>Ativar / valor fixo</Link>
                   </form>
                   <p className="muted" style={{ margin: "6px 0 0" }}>Campo vazio = usa o valor do contrato (mostrado em cinza). Só vale para {mesRotulo(mes)}.</p>
                 </details>

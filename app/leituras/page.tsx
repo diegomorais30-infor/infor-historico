@@ -107,11 +107,11 @@ export default async function Leituras({
 
   const { data: equipamentos } = await supabase
     .from("equipment")
-    .select("id, code, equipment_number, asset_tag, brand, model, serial_number, contract_id, client_id, clients(name), contracts(code)")
+    .select("id, code, equipment_number, asset_tag, brand, model, serial_number, contract_id, client_id, clients(name, meter_reading), contracts(code)")
     .eq("status", "active")
     .limit(2000);
   let lista: any[] = equipamentos ?? [];
-  if (escopo === "locacao") lista = lista.filter((e) => e.contract_id || e.asset_tag);
+  if (escopo === "locacao") lista = lista.filter((e) => e.clients?.meter_reading);
   const clientesLista = Array.from(new Map(lista.map((e) => [e.client_id, e.clients?.name ?? "Sem cliente"])).entries()).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
   if (clienteSel) lista = lista.filter((e) => e.client_id === clienteSel);
   if (q) {
@@ -179,7 +179,7 @@ export default async function Leituras({
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
         <Link className={ver === "cliente" ? "btn primary" : "btn secondary"} href={base({ ver: "cliente" })}>Por cliente</Link>
         <Link className={ver === "contrato" ? "btn primary" : "btn secondary"} href={base({ ver: "contrato" })}>Por contrato</Link>
-        <Link className={escopo === "locacao" ? "btn primary" : "btn secondary"} href={base({ escopo: "locacao" })}>Só locação</Link>
+        <Link className={escopo === "locacao" ? "btn primary" : "btn secondary"} href={base({ escopo: "locacao" })}>Clientes em leitura</Link>
         <Link className={escopo === "todas" ? "btn primary" : "btn secondary"} href={base({ escopo: "todas" })}>Todas as impressoras</Link>
         <Link className="btn secondary" href="/contratos/gerenciar">⚙️ Gerenciar contratos (ativar / valor)</Link>
       </div>

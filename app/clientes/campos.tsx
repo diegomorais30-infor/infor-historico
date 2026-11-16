@@ -31,6 +31,7 @@ export function lerCliente(fd: FormData) {
     client_type: v("client_type") ?? "cliente",
     is_contract: v("client_type") === "contrato",
     origin: v("origin"),
+    meter_reading: fd.get("meter_reading") === "sim",
     municipal_code: v("municipal_code"),
     iss_retido: fd.get("iss_retido") === "sim",
     active: fd.get("situacao") !== "bloqueado",
@@ -67,6 +68,9 @@ export function CamposCliente({ c }: { c?: any }) {
           ))}
         </div>
       </div>
+      <label className="field" style={{ gridColumn: "1/-1", flexDirection: "row", gap: 8, alignItems: "center" }}>
+        <input type="checkbox" name="meter_reading" value="sim" defaultChecked={!!c?.meter_reading} style={{ width: "auto" }} /> Entra na leitura mensal dos contadores
+      </label>
       <label className="field">Origem
         <select name="origin" defaultValue={d("origin") || "cliente"}>
           {ORIGENS_CLIENTE.map(([v, n]) => <option key={v} value={v}>{n}</option>)}

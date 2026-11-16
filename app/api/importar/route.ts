@@ -97,6 +97,18 @@ export async function POST(req: NextRequest) {
       }).eq("company_id", EMPRESA).eq("legacy_ref", String(r.idEquipamentos));
       if (error) erros.push(error.message); else ok++;
     }
+  } else if (tipo === "vincular_eq") {
+    // liga um equipamento cadastrado à mão no InforGest ao equipamento equivalente do Inforos (mesmo nº de série), sem duplicar
+    const nrm = (x: any) => String(x ?? "").replace(/\s/g, "").toUpperCase();
+    for (const r of registros as any[]) {
+      const ser = nrm(r.serial_number);
+      if (!ser) continue;
+      const { data: cand } = await db.from("equipment").select("id, serial_number").eq("company_id", EMPRESA).is("legacy_ref", null);
+      const alvo = (cand ?? []).find((c: any) => nrm(c.serial_number) === ser);
+      if (!alvo) continue;
+      const { error } = await db.from("equipment").update({ legacy_ref: String(r.idEquipamentos), legacy_data: r }).eq("id", alvo.id);
+      if (error) erros.push(error.message); else ok++;
+    }
   } else if (tipo === "vincular_os") {
     // liga uma OS lançada à mão no InforGest à OS equivalente do Inforos (sem sobrescrever os dados dela)
     for (const r of registros as any[]) {

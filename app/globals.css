@@ -132,8 +132,11 @@ form.inline input[type=number]{width:90px}
   .folhas.sem-linhas .etq{outline:none}
 }
 .folhas.sem-linhas .etq{outline:none}
-.so-imprimir{display:none}
-@media print{.so-imprimir{display:block}}
+.so-imprimir,.print-cab{display:none}
+@media print{
+  .so-imprimir,.print-cab{display:block;margin-bottom:10px}
+  body:has(.doc-folha) .print-cab,body:has(.os-folha) .print-cab,body:has(.folhas) .print-cab{display:none !important}
+}
 
 .selo{display:inline-block;padding:2px 8px;border-radius:4px;color:#fff;font-size:12px;font-weight:700;line-height:1.4;margin:1px 0}
 

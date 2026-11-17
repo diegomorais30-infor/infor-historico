@@ -22,7 +22,7 @@ export default async function RelatorioPagina({ params, searchParams }: { params
 
   return (
     <main className="wrap">
-      <div className="so-imprimir" style={{ marginBottom: 10 }}><CabecalhoEmpresa emp={emp as any} direita={<><div><b>Relatório de {cfg.titulo}</b></div><div>{f.de} a {f.ate}</div></>} /></div>
+      <div className="so-imprimir doc-folha" style={{ marginBottom: 10 }}><CabecalhoEmpresa emp={emp as any} direita={<><div><b>Relatório de {cfg.titulo}</b></div><div>{f.de} a {f.ate}</div></>} /></div>
       <h1 className="title">Relatório de {cfg.titulo}</h1>
       <nav className="os-sub" style={{ margin: "10px 0", flexWrap: "wrap" }}>
         {Object.entries(RELATORIOS).filter(([k]) => verFin || !SO_FINANCEIRO.includes(k)).map(([k, v]) => (

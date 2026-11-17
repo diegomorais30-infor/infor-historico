@@ -4,6 +4,7 @@ import { NOME_PRODUTO } from "@/lib/marca";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./logout-button";
+import CabecalhoEmpresa from "@/components/cabecalho-empresa";
 import InstalarApp from "@/components/instalar-app";
 import { podeVer } from "@/lib/permissoes";
 import MenuLateral, { type ItemMenu } from "@/components/menu-lateral";
@@ -22,6 +23,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const user: any = cl?.claims ? { id: cl.claims.sub } : null;
 
   let empresa = "";
+  let emp: any = null;
   let papel = "";
   let perms: any = {};
   let abertos = 0;
@@ -30,13 +32,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   if (user) {
     const [rc, rp, r1, r2] = await Promise.all([
       supabase.from("service_requests").select("*", { count: "exact", head: true }).eq("status", "open"),
-      supabase.from("profiles").select("role, permissions, companies(name)").eq("id", user.id).single(),
+      supabase.from("profiles").select("role, permissions, companies(name, document, address, email, phone, whatsapp)").eq("id", user.id).single(),
       supabase.from("service_orders").select("*", { count: "exact", head: true }),
       supabase.from("service_orders").select("*", { count: "exact", head: true }).in("status", ["entrada", "orcamento", "aberto", "andamento", "pausado"]),
     ]);
     abertos = rc.count ?? 0;
     const data: any = rp.data;
     empresa = data?.companies?.name ?? "";
+    emp = data?.companies ?? null;
     papel = data?.role ?? "";
     perms = data?.permissions ?? {};
     osTodas = r1.count ?? 0;
@@ -129,6 +132,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 {empresa && <span className="muted">{empresa}</span>}
                 <LogoutButton />
               </div>
+              {emp && <div className="print-cab"><CabecalhoEmpresa emp={emp} /></div>}
               {children}
             </div>
           </div>

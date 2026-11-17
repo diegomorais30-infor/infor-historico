@@ -1,3 +1,4 @@
+import SeletorCliente from "@/components/seletor-cliente";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
@@ -37,7 +38,7 @@ export default async function NovaVenda({ searchParams }: { searchParams: Promis
   const { supabase, perfil } = await getContexto();
   if (!podeEditar(perfil?.role, (perfil as any)?.permissions, "financeiro")) redirect("/vendas");
   const [{ data: clientes }, { data: termos }, { data: eu }, { data: listas }] = await Promise.all([
-    supabase.from("clients").select("id, name").eq("active", true).order("name").limit(2000),
+    supabase.from("clients").select("id, name, document").eq("active", true).order("name").limit(2000),
     supabase.from("warranty_terms").select("name").order("name"),
     supabase.from("profiles").select("full_name").eq("id", (await supabase.auth.getUser()).data.user?.id ?? "").maybeSingle(),
     supabase.from("price_lists").select("id, name, adjust_percent").order("name"),
@@ -48,14 +49,10 @@ export default async function NovaVenda({ searchParams }: { searchParams: Promis
       <p className="muted">Cliente, produtos e a garantia da venda</p>
       {erro && <div className="error" style={{ margin: "10px 0" }}>{erro}</div>}
       <form action={criar} className="card grid g3">
-        <label className="field" style={{ gridColumn: "span 2" }}>
+        <div className="field" style={{ gridColumn: "span 2" }}>
           Cliente
-          <select name="client_id" required defaultValue="">
-            <option value="">Digite/escolha o cliente…</option>
-            {(clientes ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <Link href="/clientes/novo" style={{ fontSize: 13, color: "var(--link)" }}>+ Cliente (cadastrar um novo)</Link>
-        </label>
+          <SeletorCliente clientes={(clientes ?? []) as any} />
+        </div>
         <label className="field">
           Vendedor
           <input name="seller" defaultValue={(eu as any)?.full_name ?? ""} />

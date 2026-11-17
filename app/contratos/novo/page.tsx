@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SeletorCliente from "@/components/seletor-cliente";
 import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import { createClient } from "@/lib/supabase/server";
@@ -52,7 +53,7 @@ async function criarContrato(formData: FormData) {
 export default async function NovoContrato({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
   const { erro } = await searchParams;
   const { supabase } = await getContexto();
-  const { data: clientes } = await supabase.from("clients").select("id, name").eq("active", true).order("name");
+  const { data: clientes } = await supabase.from("clients").select("id, name, document").eq("active", true).order("name").limit(2000);
 
   return (
     <main className="wrap" style={{ maxWidth: 860 }}>
@@ -65,17 +66,10 @@ export default async function NovoContrato({ searchParams }: { searchParams: Pro
       <p className="muted">Depois de salvar, você vincula as impressoras ao contrato.</p>
 
       <form action={criarContrato} className="card grid g2" style={{ marginTop: 18 }}>
-        <label className="field" style={{ gridColumn: "1/-1" }}>
+        <div className="field" style={{ gridColumn: "1/-1" }}>
           Cliente
-          <select name="client_id" required defaultValue="">
-            <option value="">Selecione...</option>
-            {(clientes ?? []).map((c: any) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <SeletorCliente clientes={(clientes ?? []) as any} />
+        </div>
         <label className="field">
           Início
           <input name="start_date" type="date" defaultValue={hojeBR()} />

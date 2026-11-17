@@ -7,6 +7,7 @@ import LogoutButton from "./logout-button";
 import CabecalhoEmpresa from "@/components/cabecalho-empresa";
 import { Suspense } from "react";
 import ProgressoNavegacao from "@/components/progresso-navegacao";
+import TabelasMoveis from "@/components/tabelas-moveis";
 import InstalarApp from "@/components/instalar-app";
 import { podeVer } from "@/lib/permissoes";
 import MenuLateral, { type ItemMenu } from "@/components/menu-lateral";
@@ -151,6 +152,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           </>
         )}
         <Suspense fallback={null}><ProgressoNavegacao /></Suspense>
+        <TabelasMoveis />
         {user && <InstalarApp />}
       </body>
     </html>

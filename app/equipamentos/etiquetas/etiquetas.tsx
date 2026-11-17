@@ -137,6 +137,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
                 {i.marca && <div className="etq-linha">{i.marca}</div>}
                 {i.serie && <div className="etq-linha">Série: {i.serie}</div>}
                 {whatsapp && <div className="etq-zap">WhatsApp {fmtFone(whatsapp)}</div>}
+                <div className="etq-cli">{i.cliente || "—"}</div>
               </div>
             ))}
           </div>

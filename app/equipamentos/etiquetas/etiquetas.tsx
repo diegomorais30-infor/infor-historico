@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 
+// Nome longo com " - ": usa só a parte final (ex.: "COOPERATIVA ... LTDA. - SICOOB CREDINOR PIRES NOVO" → "SICOOB CREDINOR PIRES NOVO")
+function nomeFaixa(n: string) {
+  if (!n) return "—";
+  const partes = n.split(/\s+-\s+/);
+  return n.length > 28 && partes.length > 1 ? partes[partes.length - 1].trim() : n;
+}
 type Item = { id: string; code: string; marca: string; serie: string; token: string; tag: string; cliente: string };
 
 function fmtFone(n: string) {
@@ -137,7 +143,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
                 {i.marca && <div className="etq-linha">{i.marca}</div>}
                 {i.serie && <div className="etq-linha">Série: {i.serie}</div>}
                 {whatsapp && <div className="etq-zap">WhatsApp {fmtFone(whatsapp)}</div>}
-                <div className="etq-cli">{i.cliente || "—"}</div>
+                <div className="etq-cli">{nomeFaixa(i.cliente)}</div>
               </div>
             ))}
           </div>

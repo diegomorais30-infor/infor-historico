@@ -1074,7 +1074,7 @@ export default async function DetalheOS({
                     </tr>
                   </thead>
                   <tbody>
-                    {(itens ?? []).filter((i: any) => i.kind === k).map((i: any) => (
+                    {lista.map((i: any) => (
                       <tr key={i.id}>
                         <td>{i.description}</td>
                         <td>{Number(i.quantity)}</td>
@@ -1097,9 +1097,6 @@ export default async function DetalheOS({
                         </td>
                       </tr>
                     ))}
-                    {!(itens ?? []).some((i: any) => i.kind === k) && (
-                      
-                    )}
                   </tbody>
                 </table>
 

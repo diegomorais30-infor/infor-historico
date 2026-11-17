@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import BotaoImprimir from "@/components/botao-imprimir";
 import { podeVer } from "@/lib/permissoes";
+import CabecalhoEmpresa, { CAMPOS_EMPRESA } from "@/components/cabecalho-empresa";
 import { lerFiltros, RELATORIOS, semValores, SO_FINANCEIRO } from "@/lib/relatorios";
 
 export default async function RelatorioPagina({ params, searchParams }: { params: Promise<{ tipo: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
@@ -16,10 +17,12 @@ export default async function RelatorioPagina({ params, searchParams }: { params
   if (!verFin && SO_FINANCEIRO.includes(tipo)) notFound();
   const bruto = await cfg.carregar(supabase, f);
   const r = verFin ? bruto : semValores(bruto);
+  const { data: emp } = await supabase.from("companies").select(CAMPOS_EMPRESA).eq("id", (perfil as any).company_id).single();
   const qs = new URLSearchParams({ de: f.de, ate: f.ate, q: f.q, status: f.status }).toString();
 
   return (
     <main className="wrap">
+      <div className="so-imprimir" style={{ marginBottom: 10 }}><CabecalhoEmpresa emp={emp as any} direita={<><div><b>Relatório de {cfg.titulo}</b></div><div>{f.de} a {f.ate}</div></>} /></div>
       <h1 className="title">Relatório de {cfg.titulo}</h1>
       <nav className="os-sub" style={{ margin: "10px 0", flexWrap: "wrap" }}>
         {Object.entries(RELATORIOS).filter(([k]) => verFin || !SO_FINANCEIRO.includes(k)).map(([k, v]) => (

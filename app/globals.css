@@ -115,16 +115,25 @@ form.inline input[type=number]{width:90px}
 .etq-code{font:800 calc(7mm*var(--k))/1 Arial,sans-serif;margin-top:calc(4mm*var(--k));letter-spacing:.3mm}
 .etq-linha{font:500 calc(4.6mm*var(--k))/1.3 Arial,sans-serif;margin-top:calc(1.6mm*var(--k))}
 .etq-zap{font:700 calc(4.6mm*var(--k))/1.2 Arial,sans-serif;margin-top:auto;color:#0a56b8}
+@page{size:A4;margin:10mm}
+@page etiquetas{size:A4;margin:0}
+@page os{size:A4;margin:0}
 @media print{
-  @page{size:A4;margin:0}
-  .wrap{padding:0 !important;max-width:none !important}
-  .folhas{display:block}
+  .folhas{page:etiquetas;display:block}
+  .os-folha{page:os}
+  .folhas,.os-folha{margin:0}
+  main.wrap:has(.folhas){padding:0 !important;max-width:none !important}
+  main.wrap:has(.os-folha){padding:0 !important;max-width:none !important}
+  .doc-folha{padding:0 !important}
+  .wrap{max-width:none !important}
   .folha{zoom:1;box-shadow:none;break-after:page;page-break-after:always}
   .folha:last-child{break-after:auto;page-break-after:auto}
   .etq{outline:.25mm dashed #555;outline-offset:-.25mm}
   .folhas.sem-linhas .etq{outline:none}
 }
 .folhas.sem-linhas .etq{outline:none}
+.so-imprimir{display:none}
+@media print{.so-imprimir{display:block}}
 
 .selo{display:inline-block;padding:2px 8px;border-radius:4px;color:#fff;font-size:12px;font-weight:700;line-height:1.4;margin:1px 0}
 

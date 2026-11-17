@@ -291,7 +291,7 @@ export default async function Compra({ params, searchParams }: { params: Promise
       </section>
 
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, flexWrap: "wrap", gap: 8 }}>
-        <Link className="btn secondary" href="/compras">← Voltar</Link>
+        <Link className="btn secondary" href="/compras">← Voltar</Link>{" "}<Link className="btn secondary" href={`/compras/${id}/imprimir`}>🖨 Imprimir</Link>
         {editar && !p.invoiced && (
           <div style={{ display: "flex", gap: 8 }}>
             <form action={faturar}>

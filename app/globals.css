@@ -284,7 +284,7 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .os-form{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 .os-form .field{margin:0}
 .os-ro{display:flex;gap:8px;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px}
-.os-bloco{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px}
+.os-bloco{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
 .os-vazio{display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px;text-align:center}
 .os-tag{display:inline-flex;gap:4px;align-items:center;background:#e0f2fe;color:#075985;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700}
 .os-tag button{background:none;border:none;cursor:pointer;color:inherit;font-weight:800}
@@ -350,3 +350,13 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .os-acao[open]>.os-acao-form{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:30;width:min(640px,92vw);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 .os-atividades{margin-top:18px;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 @media print{.os-acoes,.os-atividades,.os-migalhas{display:none !important}}
+
+.os-cartao{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.os-cartao-topo{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--soft);border-bottom:1px solid var(--line);border-radius:12px 12px 0 0}
+.os-cartao-topo h3{margin:0;font-size:17px}
+.os-cartao>table{margin:0}
+.os-vazio{display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 10px}
+.os-vazio-icone{font-size:44px;background:var(--soft);border-radius:50%;width:76px;height:76px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.os-add-pop{right:0;left:auto !important;bottom:auto !important;top:calc(100% + 8px);transform:none !important;width:min(720px,92vw)}
+.os-acao[open]>.os-add-pop{position:absolute;right:0;left:auto;top:calc(100% + 8px);bottom:auto;transform:none}
+.os-add-form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}

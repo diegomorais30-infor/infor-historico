@@ -542,7 +542,7 @@ export default async function DetalheOS({
     supabase.from("os_tasks").select("id, title, assignee_id, done, created_by, created_at").eq("order_id", id).order("created_at", { ascending: false }),
     supabase.from("os_checklists").select("id, title, items, required, question").eq("order_id", id).order("created_at"),
     supabase.from("os_equipment").select("equipment_id").eq("order_id", id),
-    supabase.from("equipment").select("id, code, brand, model, serial_number").eq("client_id", o.client_id).order("code"),
+    supabase.from("equipment").select("id, code, brand, model, serial_number, equipment_type, asset_tag, color, location").eq("client_id", o.client_id).order("code"),
     supabase.from("warranty_terms").select("name").order("name"),
     supabase.from("branches").select("name").order("name"),
     supabase.from("checklist_templates").select("id, title").order("sort"),
@@ -909,13 +909,17 @@ export default async function DetalheOS({
               <p className="muted" style={{ margin: "8px 0 0" }}>Cliente possui {(eqCliente ?? []).length} equipamento(s) cadastrado(s).</p>
             </div>
             <table className="table" style={{ marginTop: 12 }}>
-              <thead><tr><th>Código</th><th>Equipamento</th><th>Série</th><th></th></tr></thead>
+              <thead><tr><th>Equipamento</th><th>Etiqueta</th><th>Marca</th><th>Modelo</th><th>SN/IMEI</th><th>Cor</th><th>Localização</th><th></th></tr></thead>
               <tbody>
                 {eqVinculados.map((e: any) => (
                   <tr key={e.id}>
-                    <td><Link href={`/equipamentos/${e.id}`} style={{ color: "var(--link)" }}>{e.code}</Link></td>
-                    <td>{e.brand} {e.model}</td>
+                    <td><Link href={`/equipamentos/${e.id}`} style={{ color: "var(--link)", fontWeight: 700 }}>{e.equipment_type ?? e.code}</Link></td>
+                    <td>{e.asset_tag ?? "—"}</td>
+                    <td>{e.brand ?? "—"}</td>
+                    <td>{e.model ?? "—"}</td>
                     <td>{e.serial_number ?? "—"}</td>
+                    <td>{e.color ?? "—"}</td>
+                    <td>{e.location ?? "—"}</td>
                     <td>
                       {editar && (
                         <form action={desvincularEquipamento}>
@@ -927,7 +931,7 @@ export default async function DetalheOS({
                     </td>
                   </tr>
                 ))}
-                {!eqVinculados.length && <tr><td colSpan={4} className="muted">Nenhum equipamento vinculado.</td></tr>}
+                {!eqVinculados.length && <tr><td colSpan={8} className="muted" style={{ textAlign: "center", padding: 22 }}>Nenhum equipamento vinculado.</td></tr>}
               </tbody>
             </table>
             <div className="os-bloco" style={{ marginTop: 14 }}>
@@ -1019,9 +1023,47 @@ export default async function DetalheOS({
 
         {aba === "itens" && (
           <>
-            {(["peca", "servico"] as const).map((k) => (
-              <div key={k} className="os-bloco" style={{ marginBottom: 14 }}>
-                <h3 style={{ marginTop: 0 }}>{k === "peca" ? "Produtos" : "Serviços"}</h3>
+            {(["peca", "servico"] as const).map((k) => {
+              const lista = (itens ?? []).filter((i: any) => i.kind === k);
+              return (
+              <section key={k} className="os-cartao">
+                <div className="os-cartao-topo">
+                  <h3>{k === "peca" ? "Produtos" : "Serviços"}</h3>
+                  {editar && (
+                    <details className="os-acao os-add">
+                      <summary className="btn os-b-verde">+ Adicionar {k === "peca" ? "Produto" : "Serviço"}</summary>
+                      <div className="os-acao-form os-add-pop">
+                  <form action={adicionarItem} className="os-add-form">
+                    <input type="hidden" name="order_id" value={o.id} />
+                    <input type="hidden" name="kind" value={k} />
+                    {k === "servico" ? (
+                      <label className="field" style={{ minWidth: 200 }}>Serviço do catálogo
+                        <select name="service_id" defaultValue="">
+                          <option value="">—</option>
+                          {(servicos ?? []).map((sv: any) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
+                        </select>
+                      </label>
+                    ) : (
+                      <label className="field" style={{ minWidth: 200 }}>Produto do estoque
+                        <select name="part_id" defaultValue="">
+                          <option value="">—</option>
+                          {(pecas ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` (${p.code})` : ""}</option>)}
+                        </select>
+                      </label>
+                    )}
+                    <label className="field" style={{ flex: 1, minWidth: 160 }}>Descrição (opcional)
+                      <input name="description" />
+                    </label>
+                    <label className="field" style={{ width: 80 }}>Qtd
+                      <input name="quantity" defaultValue="1" inputMode="decimal" />
+                    </label>
+                    <button className="btn os-b-verde">+ Adicionar</button>
+                  </form>
+                      </div>
+                    </details>
+                  )}
+                </div>
+                {lista.length ? (
                 <table className="table">
                   <thead>
                     <tr>
@@ -1056,40 +1098,21 @@ export default async function DetalheOS({
                       </tr>
                     ))}
                     {!(itens ?? []).some((i: any) => i.kind === k) && (
-                      <tr><td colSpan={5} className="muted">Nenhum {k === "peca" ? "produto" : "serviço"} adicionado.</td></tr>
+                      
                     )}
                   </tbody>
                 </table>
-                {editar && (
-                  <form action={adicionarItem} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "end" }}>
-                    <input type="hidden" name="order_id" value={o.id} />
-                    <input type="hidden" name="kind" value={k} />
-                    {k === "servico" ? (
-                      <label className="field" style={{ minWidth: 200 }}>Serviço do catálogo
-                        <select name="service_id" defaultValue="">
-                          <option value="">—</option>
-                          {(servicos ?? []).map((sv: any) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
-                        </select>
-                      </label>
-                    ) : (
-                      <label className="field" style={{ minWidth: 200 }}>Produto do estoque
-                        <select name="part_id" defaultValue="">
-                          <option value="">—</option>
-                          {(pecas ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.name}{p.code ? ` (${p.code})` : ""}</option>)}
-                        </select>
-                      </label>
-                    )}
-                    <label className="field" style={{ flex: 1, minWidth: 160 }}>Descrição (opcional)
-                      <input name="description" />
-                    </label>
-                    <label className="field" style={{ width: 80 }}>Qtd
-                      <input name="quantity" defaultValue="1" inputMode="decimal" />
-                    </label>
-                    <button className="btn secondary">+ Adicionar</button>
-                  </form>
+
+                ) : (
+                  <div className="os-vazio">
+                    <div className="os-vazio-icone">📦</div>
+                    <b>Nenhum item adicionado</b>
+                    <span className="muted">Nenhum {k === "peca" ? "produto" : "serviço"} adicionado à OS</span>
+                  </div>
                 )}
-              </div>
-            ))}
+              </section>
+              );
+            })}
             {verFin && (
               <form id="fin" action={salvarFinanceiro} className="os-bloco grid g4">
                 <input type="hidden" name="order_id" value={o.id} />

@@ -6,7 +6,7 @@ export type ItemBusca = { ref: string; nome: string; cod?: string | null; barras
 const moeda = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 // Busca de produto/serviço digitando (nome, código ou código de barras), igual ao Inforos.
-export default function BuscaItem({ itens, onPreco }: { itens: ItemBusca[]; onPreco?: (v: string) => void }) {
+export default function BuscaItem({ itens, onPreco, foco = false }: { itens: ItemBusca[]; onPreco?: (v: string) => void; foco?: boolean }) {
   const [texto, setTexto] = useState("");
   const [ref, setRef] = useState("");
   const [aberto, setAberto] = useState(false);
@@ -32,7 +32,7 @@ export default function BuscaItem({ itens, onPreco }: { itens: ItemBusca[]; onPr
       <input type="hidden" name="ref" value={ref} />
       <input
         ref={inp}
-        autoFocus
+        autoFocus={foco}
         autoComplete="off"
         placeholder="🔍 Digite para buscar produto ou serviço (nome, código ou barras)…"
         value={texto}

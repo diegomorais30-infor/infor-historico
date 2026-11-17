@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BuscaItem, { type ItemBusca } from "@/components/busca-item";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
@@ -78,12 +79,19 @@ async function addItem(fd: FormData) {
   "use server";
   const supabase = await createClient();
   const id = String(fd.get("id"));
-  const kind = String(fd.get("kind") || "avulso");
-  const catalogo = String(fd.get("catalogo") || "");
+  let kind = String(fd.get("kind") || "avulso");
+  let catalogo = String(fd.get("catalogo") || "");
+  const ref = String(fd.get("ref") || ""); // "p:<id>" produto, "s:<id>" serviço (busca digitando)
+  if (ref.includes(":")) { kind = ref.startsWith("p:") ? "produto" : "servico"; catalogo = ref.slice(2); }
   let description = String(fd.get("description") || "").trim();
-  if (!description && catalogo) {
+  let preco = nume(fd.get("unit_price"));
+  if (catalogo) {
     const { data } = kind === "produto" ? await supabase.from("parts").select("name").eq("id", catalogo).single() : await supabase.from("catalog_services").select("name").eq("id", catalogo).single();
-    description = (data as any)?.name ?? "";
+    if (!description) description = (data as any)?.name ?? "";
+    if (!preco) {
+      const { data: pr } = kind === "produto" ? await supabase.from("part_prices").select("sale_price").eq("part_id", catalogo).maybeSingle() : await supabase.from("service_prices").select("price").eq("service_id", catalogo).maybeSingle();
+      preco = Number((pr as any)?.sale_price ?? (pr as any)?.price ?? 0);
+    }
   }
   if (!description) redirect(volta(id, "?erro=" + encodeURIComponent("Descreva o item ou escolha do cadastro.")));
   await supabase.from("quote_items").insert({
@@ -91,7 +99,7 @@ async function addItem(fd: FormData) {
     kind,
     description,
     quantity: nume(fd.get("quantity")) || 1,
-    unit_price: nume(fd.get("unit_price")),
+    unit_price: preco,
     discount: nume(fd.get("discount")),
   });
   revalidatePath(volta(id));
@@ -191,9 +199,16 @@ export default async function Orcamento({ params, searchParams }: { params: Prom
     supabase.from("quote_items").select("*, quote_options!inner(quote_id)").eq("quote_options.quote_id", id).order("id"),
     supabase.from("clients").select("id, name").eq("active", true).order("name").limit(2000),
     supabase.from("warranty_terms").select("name").order("name"),
-    supabase.from("parts").select("id, name").eq("active", true).order("name"),
+    supabase.from("parts").select("id, name, code, barcode, stock_quantity").eq("active", true).order("name").limit(3000),
     supabase.from("catalog_services").select("id, name").eq("active", true).order("name"),
   ]);
+  const [{ data: ppr }, { data: spr }] = await Promise.all([supabase.from("part_prices").select("part_id, sale_price"), supabase.from("service_prices").select("service_id, price")]);
+  const precoP = new Map((ppr ?? []).map((x: any) => [x.part_id, Number(x.sale_price ?? 0)]));
+  const precoS = new Map((spr ?? []).map((x: any) => [x.service_id, Number(x.price ?? 0)]));
+  const itensBusca: ItemBusca[] = [
+    ...(servicos ?? []).map((p: any) => ({ ref: `s:${p.id}`, nome: p.name, preco: precoS.get(p.id) ?? null, tipo: "s" as const })),
+    ...(pecas ?? []).map((p: any) => ({ ref: `p:${p.id}`, nome: p.name, cod: p.code, barras: p.barcode, estoque: p.stock_quantity != null ? Number(p.stock_quantity) : null, preco: precoP.get(p.id) ?? null, tipo: "p" as const })),
+  ];
   const validade = q.valid_until ? new Date(q.valid_until).toLocaleString("sv-SE", { timeZone: "America/Sao_Paulo" }).slice(0, 16).replace(" ", "T") : "";
   const vencido = q.valid_until && new Date(q.valid_until).getTime() < Date.now() && ["rascunho", "enviado"].includes(q.status);
   const cfg = await lerConfig(supabase);
@@ -275,19 +290,15 @@ export default async function Orcamento({ params, searchParams }: { params: Prom
             {editar && (
               <form action={addItem} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end", marginTop: 10 }}>
                 <input type="hidden" name="id" value={q.id} /><input type="hidden" name="option_id" value={op.id} />
-                <label className="field" style={{ width: 120 }}>Tipo
+                <label className="field" style={{ width: 120 }}>Tipo (avulso)
                   <select name="kind" defaultValue="servico"><option value="servico">Serviço</option><option value="produto">Produto</option><option value="avulso">Avulso</option></select>
                 </label>
-                <label className="field" style={{ minWidth: 200 }}>Do cadastro
-                  <select name="catalogo" defaultValue="">
-                    <option value="">—</option>
-                    <optgroup label="Serviços">{(servicos ?? []).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</optgroup>
-                    <optgroup label="Produtos">{(pecas ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
-                  </select>
-                </label>
+                <div className="field" style={{ minWidth: 260, flex: 2 }}>Buscar no cadastro
+                  <BuscaItem itens={itensBusca} />
+                </div>
                 <label className="field" style={{ flex: 1, minWidth: 160 }}>Ou item avulso<input name="description" placeholder="Descrição" /></label>
                 <label className="field" style={{ width: 70 }}>Qtd<input name="quantity" defaultValue="1" inputMode="decimal" /></label>
-                <label className="field" style={{ width: 100 }}>Preço<input name="unit_price" defaultValue="0" inputMode="decimal" /></label>
+                <label className="field" style={{ width: 100 }}>Preço (0 = tabela)<input name="unit_price" defaultValue="0" inputMode="decimal" /></label>
                 <label className="field" style={{ width: 90 }}>Desc.<input name="discount" defaultValue="0" inputMode="decimal" /></label>
                 <button className="btn secondary">+ Adicionar</button>
               </form>

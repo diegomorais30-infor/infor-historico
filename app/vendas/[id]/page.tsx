@@ -196,7 +196,7 @@ export default async function Venda({ params, searchParams }: { params: Promise<
             <input type="hidden" name="id" value={id} />
             <label className="field" style={{ gridColumn: "span 2" }}>
               Produto / serviço
-              <BuscaItem itens={itensBusca} />
+              <BuscaItem itens={itensBusca} foco />
             </label>
             <label className="field">Descrição (avulso)<input name="description" /></label>
             <label className="field">Qtd<input name="quantity" inputMode="decimal" defaultValue="1" /></label>

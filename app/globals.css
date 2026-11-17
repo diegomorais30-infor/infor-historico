@@ -407,3 +407,6 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
   .os-cartao-topo{flex-wrap:wrap;gap:8px}
   .baixa-btn{width:100%;text-align:center}
 }
+
+.card:has(.busca-item),section:has(.busca-item){overflow:visible !important}
+.busca-item .cfg-pop{z-index:60}

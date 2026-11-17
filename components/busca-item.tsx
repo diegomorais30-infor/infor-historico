@@ -28,7 +28,7 @@ export default function BuscaItem({ itens, onPreco }: { itens: ItemBusca[]; onPr
   }
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="busca-item" style={{ position: "relative" }}>
       <input type="hidden" name="ref" value={ref} />
       <input
         ref={inp}

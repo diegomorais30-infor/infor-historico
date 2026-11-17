@@ -72,7 +72,8 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
 
   const GRADES: Record<number, [number, number]> = { 1: [1, 1], 2: [1, 2], 4: [2, 2], 6: [2, 3], 8: [2, 4], 9: [3, 3], 12: [3, 4], 15: [3, 5], 20: [4, 5] };
   const [cols, linhas] = GRADES[porFolha] ?? [2, 2];
-  const k = Math.min(210 / cols / 105, 297 / linhas / 148.5);
+  // 0,86: reserva espaço para a faixa do cliente no rodapé (patrimônio + IC-EQP ocupam duas linhas)
+  const k = Math.min(210 / cols / 105, 297 / linhas / 148.5) * 0.86;
   const folhas: Item[][] = [];
   for (let i = 0; i < escolhidos.length; i += porFolha) folhas.push(escolhidos.slice(i, i + porFolha));
 
@@ -141,7 +142,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
             {f.map((i) => (
               <div className="etq" key={i.id}>
                 <img src="/logo-infor.jpg" alt={empresa || "Infor Cartuchos"} className="etq-logo" />
-                <div className="etq-cta">Precisou de assistência técnica? Escaneie o qr code e logo será atendido.</div>
+                <div className="etq-cta">CHAMOU, CHEGOU! ESCANEIE O QR CODE E LOGO SERÁ ATENDIDO.</div>
                 {qrs[i.id] ? <img src={qrs[i.id]} alt={`QR ${i.code}`} className="etq-qr" /> : <div className="etq-qr" />}
                 {i.tag && <div className="etq-code">Patrimônio {i.tag}</div>}
                 <div className={i.tag ? "etq-ic" : "etq-code"}>{i.code}</div>

@@ -52,7 +52,22 @@ async function salvar(formData: FormData) {
     paid_at: pago ? String(formData.get("paid_at") || due) : null,
     notes: txt(formData.get("notes")),
   };
-  const { error } = id ? await supabase.from("finance_entries").update(dados).eq("id", id) : await supabase.from("finance_entries").insert(dados);
+  const parcelas = Math.min(Math.max(Math.floor(Number(formData.get("parcelas") || 1)) || 1, 1), 60);
+  let error: { message: string } | null;
+  if (!id && parcelas > 1) {
+    // Parcelado / recorrente: uma linha por mês, com o valor informado em cada parcela.
+    const soma = (iso: string, n: number) => { const d = new Date(iso + "T12:00:00"); d.setMonth(d.getMonth() + n); return d.toLocaleDateString("sv-SE"); };
+    const linhas = Array.from({ length: parcelas }, (_, i) => ({
+      ...dados,
+      description: `${descricao} (${i + 1}/${parcelas})`,
+      due_date: soma(due, i),
+      competence: soma(String(dados.competence), i),
+      paid_at: i === 0 ? dados.paid_at : null,
+    }));
+    ({ error } = await supabase.from("finance_entries").insert(linhas));
+  } else {
+    ({ error } = id ? await supabase.from("finance_entries").update(dados).eq("id", id) : await supabase.from("finance_entries").insert(dados));
+  }
   if (error) redirect(volta + sep + "erro=" + encodeURIComponent(error.message));
   revalidatePath("/financeiro");
   redirect(volta.replace(/[?&](novo|editar)=[^&]*/g, "").replace("/financeiro&", "/financeiro?"));
@@ -165,6 +180,7 @@ export default async function Faturas({ searchParams }: { searchParams: Promise<
         <label className="field">Data vencimento<input name="due_date" type="date" defaultValue={e?.due_date ?? hojeBR()} /></label>
         <label className="field">Forma de pagamento<input name="payment_method" list="formas2" defaultValue={e?.payment_method ?? ""} /><datalist id="formas2">{FORMAS.map((c) => <option key={c} value={c} />)}</datalist></label>
         <label className="field">Data do pagamento<input name="paid_at" type="date" defaultValue={e?.paid_at ?? ""} /></label>
+        {!e && <label className="field">Parcelas / repetições (mensais)<input name="parcelas" type="number" min={1} max={60} defaultValue={1} /></label>}
         <label className="field" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}><input name="pago" type="checkbox" defaultChecked={!!e?.paid_at} style={{ width: "auto" }} /> Pago / recebido</label>
         <label className="field" style={{ gridColumn: "1/-1" }}>Anotações<input name="notes" defaultValue={e?.notes ?? ""} /></label>
         <div style={{ gridColumn: "1/-1", display: "flex", gap: 8 }}>

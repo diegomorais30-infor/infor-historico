@@ -99,7 +99,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
           </span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar patrimônio, modelo, série ou cliente" style={{ flex: 1, minWidth: 220 }} />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar patrimônio, IC-EQP, modelo, série ou cliente" style={{ flex: 1, minWidth: 220 }} />
           <select value={cli} onChange={(e) => setCli(e.target.value)}>
             <option value="">Todos os clientes</option>
             {clientes.map((c) => (
@@ -126,7 +126,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
             <label key={i.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={sel.has(i.id)} onChange={() => alterna(i.id)} />
               <span>
-                <strong>{i.tag ? `Patrimônio ${i.tag}` : i.code}</strong> — {i.marca || "sem modelo"} {i.serie && `· série ${i.serie}`}
+                <strong>{i.tag ? `Patrimônio ${i.tag}` : "Sem patrimônio"}</strong> · <strong>{i.code}</strong> — {i.marca || "sem modelo"} {i.serie && `· série ${i.serie}`}
                 {i.cliente && <span className="muted"> · {i.cliente}</span>}
               </span>
             </label>

@@ -1,16 +1,17 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { criarClienteRapido } from "@/app/os/nova/actions";
 
 type C = { id: string; name: string; document?: string | null };
 
-export default function SeletorCliente({ clientes, inicial }: { clientes: C[]; inicial?: string }) {
+export default function SeletorCliente({ clientes, inicial, onChange }: { clientes: C[]; inicial?: string; onChange?: (id: string) => void }) {
   const [lista, setLista] = useState<C[]>(clientes);
   const [id, setId] = useState(inicial ?? "");
   const [texto, setTexto] = useState(clientes.find((c) => c.id === inicial)?.name ?? "");
   const [aberto, setAberto] = useState(false);
   const [modal, setModal] = useState(false);
   const [msg, setMsg] = useState("");
+  useEffect(() => { onChange?.(id); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [salvando, setSalvando] = useState(false);
   const [f, setF] = useState({ nome: "", celular: "", documento: "", telefone: "", email: "", tipo: "fisica" as "fisica" | "juridica", cep: "" });
 

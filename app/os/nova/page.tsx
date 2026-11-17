@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PRIORIDADE_OS } from "@/lib/os";
 import { podeEditar } from "@/lib/permissoes";
 import { vazioParaNulo } from "@/lib/format";
-import SeletorCliente from "@/components/seletor-cliente";
+import ClienteEquipamento from "./cliente-equipamento";
 
 async function criar(formData: FormData) {
   "use server";
@@ -67,21 +67,7 @@ export default async function NovaOS({
       {erro && <div className="error" style={{ margin: "14px 0" }}>{erro}</div>}
       <form action={criar} className="card grid g2" style={{ marginTop: 14 }}>
         <input type="hidden" name="service_request_id" value={chamado ?? ""} />
-        <div className="field">
-          Cliente
-          <SeletorCliente clientes={(clientes ?? []) as any} inicial={eq?.client_id ?? ""} />
-        </div>
-        <label className="field">
-          Equipamento (opcional)
-          <select name="equipment_id" defaultValue={eqInicial}>
-            <option value="">Sem equipamento</option>
-            {(equipamentos ?? []).map((e: any) => (
-              <option key={e.id} value={e.id}>
-                {e.code} · {e.brand ?? ""} {e.model ?? ""}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ClienteEquipamento clientes={(clientes ?? []) as any} equipamentos={(equipamentos ?? []) as any} clienteInicial={eq?.client_id ?? ""} equipamentoInicial={eqInicial} />
         <label className="field">
           Atendimento
           <select name="atendimento" defaultValue="externo">

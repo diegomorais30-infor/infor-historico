@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { podeEditar, podeVer } from "@/lib/permissoes";
 import { fmtData, hojeBR, moeda } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import BuscaItem, { type ItemBusca } from "@/components/busca-item";
 
 const num = (v: FormDataEntryValue | null) => Number(String(v || "0").replace(",", ".")) || 0;
 const volta = (id: string, e = "") => `/vendas/${id}${e}`;
@@ -155,11 +156,20 @@ export default async function Venda({ params, searchParams }: { params: Promise<
   const aberta = !v.billed && editFin;
   const [{ data: pecas }, { data: servs }, { data: kits }] = aberta
     ? await Promise.all([
-        supabase.from("parts").select("id, name").eq("active", true).order("name").limit(2000),
+        supabase.from("parts").select("id, name, code, barcode, stock_quantity").eq("active", true).order("name").limit(3000),
         supabase.from("catalog_services").select("id, name").eq("active", true).order("name"),
         supabase.from("kits").select("id, name").order("name"),
       ])
     : [{ data: [] as any[] }, { data: [] as any[] }, { data: [] as any[] }];
+  const [{ data: ppr }, { data: spr }] = aberta
+    ? await Promise.all([supabase.from("part_prices").select("part_id, sale_price"), supabase.from("service_prices").select("service_id, price")])
+    : [{ data: [] as any[] }, { data: [] as any[] }];
+  const precoP = new Map((ppr ?? []).map((x: any) => [x.part_id, Number(x.sale_price ?? 0)]));
+  const precoS = new Map((spr ?? []).map((x: any) => [x.service_id, Number(x.price ?? 0)]));
+  const itensBusca: ItemBusca[] = [
+    ...(pecas ?? []).map((p: any) => ({ ref: `p:${p.id}`, nome: p.name, cod: p.code, barras: p.barcode, estoque: p.stock_quantity != null ? Number(p.stock_quantity) : null, preco: precoP.get(p.id) ?? null, tipo: "p" as const })),
+    ...(servs ?? []).map((p: any) => ({ ref: `s:${p.id}`, nome: p.name, preco: precoS.get(p.id) ?? null, tipo: "s" as const })),
+  ];
   const sub = (itens ?? []).reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unit_price) - Number(i.discount), 0);
   return (
     <main className="wrap" style={{ maxWidth: 900 }}>
@@ -186,11 +196,7 @@ export default async function Venda({ params, searchParams }: { params: Promise<
             <input type="hidden" name="id" value={id} />
             <label className="field" style={{ gridColumn: "span 2" }}>
               Produto / serviço
-              <select name="ref" defaultValue="">
-                <option value="">Item avulso (digite abaixo)</option>
-                <optgroup label="Produtos">{(pecas ?? []).map((p: any) => <option key={p.id} value={`p:${p.id}`}>{p.name}</option>)}</optgroup>
-                <optgroup label="Serviços">{(servs ?? []).map((p: any) => <option key={p.id} value={`s:${p.id}`}>{p.name}</option>)}</optgroup>
-              </select>
+              <BuscaItem itens={itensBusca} />
             </label>
             <label className="field">Descrição (avulso)<input name="description" /></label>
             <label className="field">Qtd<input name="quantity" inputMode="decimal" defaultValue="1" /></label>

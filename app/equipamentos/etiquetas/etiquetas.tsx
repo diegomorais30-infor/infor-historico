@@ -67,10 +67,13 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
           </strong>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="btn secondary" onClick={() => setSel(new Set([...sel, ...visiveis.map((i) => i.id)]))}>
-              Marcar os {visiveis.length} da lista
+              ☑ Marcar os {visiveis.length} da lista
+            </button>
+            <button type="button" className="btn secondary" onClick={() => { const ids = new Set(visiveis.map((i) => i.id)); setSel(new Set([...sel].filter((x) => !ids.has(x)))); }}>
+              ☐ Desmarcar os {visiveis.length} da lista
             </button>
             <button type="button" className="btn secondary" onClick={() => setSel(new Set())}>
-              Limpar
+              ✖ Limpar tudo
             </button>
             <button type="button" className="btn primary" disabled={!escolhidos.length} onClick={() => window.print()}>
               Imprimir

@@ -96,6 +96,8 @@ async function salvarCabecalho(fd: FormData) {
     notes: String(fd.get("notes") || "").trim() || null,
     discount: num(fd.get("discount")),
     freight: num(fd.get("freight")),
+    entrega: fd.get("entrega") === "on",
+    entrega_obs: String(fd.get("entrega_obs") || "").trim() || null,
   }).eq("id", id);
   await recalcular(supabase, id);
   revalidatePath(volta(id));
@@ -218,6 +220,8 @@ export default async function Venda({ params, searchParams }: { params: Promise<
             <label className="field">Desconto (R$)<input name="discount" inputMode="decimal" defaultValue={Number(v.discount)} /></label>
             <label className="field">Frete (R$)<input name="freight" inputMode="decimal" defaultValue={Number(v.freight)} /></label>
             <label className="field" style={{ gridColumn: "1/-1" }}>Observações<input name="notes" defaultValue={v.notes ?? ""} /></label>
+            <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="entrega" defaultChecked={!!v.entrega} style={{ width: "auto" }} /> Venda para entrega (Infor Chamados)</label>
+            <label className="field" style={{ gridColumn: "span 2" }}>Detalhes da entrega<input name="entrega_obs" defaultValue={v.entrega_obs ?? ""} /></label>
             <div><button className="btn secondary">Salvar ajustes</button></div>
           </form>
           <h2 style={{ marginTop: 16 }}>Faturar</h2>

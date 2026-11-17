@@ -23,6 +23,8 @@ async function criar(fd: FormData) {
       notes: String(fd.get("notes") || "").trim() || null,
       warranty_term: String(fd.get("warranty_term") || "").trim() || null,
       price_list_id: String(fd.get("price_list_id") || "") || null,
+      entrega: fd.get("entrega") === "on",
+      entrega_obs: String(fd.get("entrega_obs") || "").trim() || null,
     })
     .select("id")
     .single();
@@ -83,6 +85,13 @@ export default async function NovaVenda({ searchParams }: { searchParams: Promis
         <label className="field" style={{ gridColumn: "1/-1" }}>
           Observações
           <input name="notes" />
+        </label>
+        <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <input type="checkbox" name="entrega" style={{ width: "auto" }} /> Venda para entrega (vai para o Infor Chamados)
+        </label>
+        <label className="field" style={{ gridColumn: "span 2" }}>
+          Detalhes da entrega (endereço, horário, quem recebe)
+          <input name="entrega_obs" />
         </label>
         <div style={{ gridColumn: "1/-1", display: "flex", gap: 8 }}>
           <button className="btn primary">Salvar e adicionar produtos</button>

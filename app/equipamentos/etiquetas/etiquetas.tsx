@@ -143,7 +143,8 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
                 <img src="/logo-infor.jpg" alt={empresa || "Infor Cartuchos"} className="etq-logo" />
                 <div className="etq-cta">Precisou de assistência técnica? Escaneie o qr code e logo será atendido.</div>
                 {qrs[i.id] ? <img src={qrs[i.id]} alt={`QR ${i.code}`} className="etq-qr" /> : <div className="etq-qr" />}
-                <div className="etq-code">{i.tag ? `Patrimônio ${i.tag}` : i.code}</div>
+                {i.tag && <div className="etq-code">Patrimônio {i.tag}</div>}
+                <div className={i.tag ? "etq-ic" : "etq-code"}>{i.code}</div>
                 {i.marca && <div className="etq-linha">{i.marca}</div>}
                 {i.serie && <div className="etq-linha">Série: {i.serie}</div>}
                 {whatsapp && <div className="etq-zap">WhatsApp {fmtFone(whatsapp)}</div>}

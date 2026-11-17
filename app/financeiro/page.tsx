@@ -82,6 +82,22 @@ async function alternarPago(formData: FormData) {
   redirect(String(formData.get("volta") || "/financeiro"));
 }
 
+async function darBaixa(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(formData.get("id"));
+  const data = String(formData.get("paid_at") || "") || hojeBR();
+  const forma = String(formData.get("payment_method") || "").trim();
+  const obs = String(formData.get("notes") || "").trim();
+  const { data: atual } = await supabase.from("finance_entries").select("notes").eq("id", id).single();
+  const upd: Record<string, any> = { paid_at: data };
+  if (forma) upd.payment_method = forma;
+  if (obs) upd.notes = [(atual as any)?.notes, `Baixa em ${data.split("-").reverse().join("/")}: ${obs}`].filter(Boolean).join("\n");
+  await supabase.from("finance_entries").update(upd).eq("id", id);
+  revalidatePath("/financeiro");
+  redirect(String(formData.get("volta") || "/financeiro"));
+}
+
 async function excluir(formData: FormData) {
   "use server";
   const supabase = await createClient();
@@ -314,12 +330,35 @@ export default async function Faturas({ searchParams }: { searchParams: Promise<
                     <td>{fmtData(e.paid_at ?? e.due_date)}</td>
                     <td>
                       {editar ? (
-                        <form action={alternarPago}>
-                          <input type="hidden" name="id" value={e.id} />
-                          <input type="hidden" name="volta" value={volta} />
-                          {e.paid_at && <input type="hidden" name="desfazer" value="1" />}
-                          <button className={`sw ${e.paid_at ? "on" : ""}`} title={e.paid_at ? "Marcar como pendente" : rec ? "Marcar como recebido" : "Marcar como pago"} aria-label="Alternar pago"><i /></button>
-                        </form>
+                        e.paid_at ? (
+                          <div className="baixa-ok">
+                            <span className="badge">✔ {rec ? "Recebido" : "Pago"} em {fmtData(e.paid_at)}</span>
+                            <form action={alternarPago}>
+                              <input type="hidden" name="id" value={e.id} />
+                              <input type="hidden" name="volta" value={volta} />
+                              <input type="hidden" name="desfazer" value="1" />
+                              <button className="baixa-desfazer" title="Voltar para pendente">↩ desfazer</button>
+                            </form>
+                          </div>
+                        ) : (
+                          <details className="baixa">
+                            <summary className="btn baixa-btn">✔ Dar baixa</summary>
+                            <div className="baixa-veu" />
+                            <form action={darBaixa} className="baixa-pop">
+                              <h3 style={{ margin: "0 0 4px" }}>{rec ? "Confirmar recebimento" : "Confirmar pagamento"}</h3>
+                              <div className="muted" style={{ marginBottom: 10 }}>{e.party ?? e.description} · <b>{moeda(e.amount)}</b> · vence {fmtData(e.due_date)}</div>
+                              <input type="hidden" name="id" value={e.id} />
+                              <input type="hidden" name="volta" value={volta} />
+                              <label className="field">{rec ? "Data do recebimento" : "Data do pagamento"}<input type="date" name="paid_at" defaultValue={hojeBR()} required /></label>
+                              <label className="field">Forma de pagamento<input name="payment_method" list="formas2" defaultValue={e.payment_method ?? ""} /></label>
+                              <label className="field">Observação (opcional)<input name="notes" placeholder="Ex.: comprovante enviado por WhatsApp" /></label>
+                              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                                <button className="btn baixa-confirma">✔ Confirmar {rec ? "recebimento" : "pagamento"}</button>
+                                <span className="muted" style={{ alignSelf: "center" }}>Clique fora para cancelar</span>
+                              </div>
+                            </form>
+                          </details>
+                        )
                       ) : (
                         <span className={e.paid_at ? "badge" : "badge warn"}>{e.paid_at ? "Pago" : "Pendente"}</span>
                       )}

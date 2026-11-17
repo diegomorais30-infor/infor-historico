@@ -360,3 +360,15 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .os-add-pop{right:0;left:auto !important;bottom:auto !important;top:calc(100% + 8px);transform:none !important;width:min(720px,92vw)}
 .os-acao[open]>.os-add-pop{position:absolute;right:0;left:auto;top:calc(100% + 8px);bottom:auto;transform:none}
 .os-add-form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+
+/* ===== Dar baixa (financeiro) ===== */
+.baixa>summary{list-style:none;cursor:pointer}
+.baixa>summary::-webkit-details-marker{display:none}
+.baixa-btn{background:#16a36a !important;border-color:#16a36a !important;color:#fff !important;white-space:nowrap;padding:6px 12px}
+.baixa-ok{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.baixa-desfazer{background:none;border:0;color:var(--muted);font-size:11.5px;cursor:pointer;padding:0;text-decoration:underline}
+.baixa-veu{display:none}
+.baixa[open] .baixa-veu{display:block;position:fixed;inset:0;background:rgba(2,10,25,.55);z-index:90}
+.baixa-pop{display:none}
+.baixa[open] .baixa-pop{display:block;position:fixed;z-index:91;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,92vw);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.baixa-confirma{background:#16a36a !important;border-color:#16a36a !important;color:#fff !important}

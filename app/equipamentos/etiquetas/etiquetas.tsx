@@ -35,7 +35,11 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
   }, [itens, busca, cli, soTag]);
   const [qrs, setQrs] = useState<Record<string, string>>({});
 
-  const escolhidos = useMemo(() => itens.filter((i) => sel.has(i.id)), [itens, sel]);
+  // Impressão agrupada por cliente (ordem alfabética), depois por patrimônio: etiquetas do mesmo cliente saem juntas
+  const escolhidos = useMemo(
+    () => itens.filter((i) => sel.has(i.id)).sort((a, b) => (a.cliente || "~").localeCompare(b.cliente || "~") || a.tag.localeCompare(b.tag, undefined, { numeric: true }) || a.code.localeCompare(b.code, undefined, { numeric: true })),
+    [itens, sel],
+  );
 
   // Gera só os QR codes que faltam (guarda os já feitos) e cede a vez ao navegador entre um e outro,
   // para marcar/desmarcar continuar respondendo mesmo com muitos selecionados.

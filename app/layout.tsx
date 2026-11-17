@@ -5,6 +5,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "./logout-button";
 import CabecalhoEmpresa from "@/components/cabecalho-empresa";
+import { Suspense } from "react";
+import ProgressoNavegacao from "@/components/progresso-navegacao";
 import InstalarApp from "@/components/instalar-app";
 import { podeVer } from "@/lib/permissoes";
 import MenuLateral, { type ItemMenu } from "@/components/menu-lateral";
@@ -148,6 +150,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             {children}
           </>
         )}
+        <Suspense fallback={null}><ProgressoNavegacao /></Suspense>
         {user && <InstalarApp />}
       </body>
     </html>

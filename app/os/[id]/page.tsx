@@ -681,8 +681,11 @@ export default async function DetalheOS({
                 </select>
               </label>
               <label className="field">Termo
-                <input name="termo" list="termos" defaultValue={o.termo ?? ""} disabled={!editar} />
-                <datalist id="termos">{(termosGar ?? []).map((x: any) => <option key={x.name} value={x.name} />)}</datalist>
+                <select name="termo" defaultValue={o.termo ?? ""} disabled={!editar}>
+                  <option value="">Sem termo (em branco)</option>
+                  {o.termo && !(termosGar ?? []).some((x: any) => x.name === o.termo) && <option value={o.termo}>{o.termo}</option>}
+                  {(termosGar ?? []).map((x: any) => <option key={x.name} value={x.name}>{x.name}</option>)}
+                </select>
               </label>
               <label className="field">Localização
                 <input name="location" defaultValue={o.location ?? ""} disabled={!editar} placeholder="Ex.: estoque, recepção, CPD" />

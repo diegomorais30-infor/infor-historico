@@ -27,6 +27,9 @@ export default async function ImprimirOS({ params, searchParams }: { params: Pro
     .select("name, document, address, email, phone, whatsapp, entry_terms, exit_terms")
     .eq("id", (perfil as any).company_id)
     .single();
+  // O termo impresso é o escolhido na OS (campo "Termo"); em branco = sem termo.
+  const { data: termoRow } = o.termo ? await supabase.from("warranty_terms").select("body").eq("name", o.termo).maybeSingle() : { data: null };
+  const termoTexto: string | null = (termoRow as any)?.body ?? null;
   const { data: itens } = await supabase.from("service_order_items").select("id, kind, description, quantity").eq("order_id", id).order("created_at");
   const { data: atend } = o.created_by ? await supabase.from("profiles").select("full_name").eq("id", o.created_by).maybeSingle() : { data: null };
   const atendente = (atend as any)?.full_name ?? o.legacy_data?.lista?.atendente ?? null;
@@ -176,11 +179,9 @@ export default async function ImprimirOS({ params, searchParams }: { params: Pro
           ))}
 
           {/* Termo de entrada / garantia de saída */}
-          {comTermos && emp?.entry_terms && (<>
-            <div style={rotulo}>{["concluido", "faturado", "finalizado"].includes(o.status) && emp?.exit_terms ? "Termo Saída" : "Termo Entrada"}</div>
-            <p style={{ ...texto, fontSize: 11.5 }}>
-              {["concluido", "faturado", "finalizado"].includes(o.status) && emp?.exit_terms ? emp.exit_terms : emp.entry_terms}
-            </p>
+          {comTermos && termoTexto && (<>
+            <div style={rotulo}>{o.termo}</div>
+            <p style={{ ...texto, fontSize: 11.5 }}>{termoTexto}</p>
           </>)}
 
           <div style={{ display: "flex", gap: 40, marginTop: "auto", paddingTop: 36, fontSize: 12 }}>

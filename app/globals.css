@@ -121,8 +121,10 @@ form.inline input[type=number]{width:90px}
   .folhas{display:block}
   .folha{zoom:1;box-shadow:none;break-after:page;page-break-after:always}
   .folha:last-child{break-after:auto;page-break-after:auto}
-  .etq{outline:none}
+  .etq{outline:.25mm dashed #555;outline-offset:-.25mm}
+  .folhas.sem-linhas .etq{outline:none}
 }
+.folhas.sem-linhas .etq{outline:none}
 
 .selo{display:inline-block;padding:2px 8px;border-radius:4px;color:#fff;font-size:12px;font-weight:700;line-height:1.4;margin:1px 0}
 

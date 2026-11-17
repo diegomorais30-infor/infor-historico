@@ -19,6 +19,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
   const [cli, setCli] = useState("");
   const [soTag, setSoTag] = useState(true);
   const [porFolha, setPorFolha] = useState(4);
+  const [linhas_, setLinhas] = useState(true);
   const clientes = useMemo(() => Array.from(new Set(itens.map((i) => i.cliente).filter(Boolean))).sort((a, b) => a.localeCompare(b)), [itens]);
   const visiveis = useMemo(() => {
     const t = busca.trim().toLowerCase();
@@ -93,6 +94,9 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
             </select>
           </label>
           <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input type="checkbox" checked={linhas_} onChange={(e) => setLinhas(e.target.checked)} /> Linhas de corte
+          </label>
+          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <input type="checkbox" checked={soTag} onChange={(e) => setSoTag(e.target.checked)} /> Só com patrimônio
           </label>
         </div>
@@ -110,7 +114,7 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
         </div>
       </section>
 
-      <div className="folhas">
+      <div className={`folhas${linhas_ ? "" : " sem-linhas"}`}>
         {folhas.map((f, n) => (
           <div className="folha" key={n} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${linhas}, 1fr)`, ["--k" as any]: k }}>
             {f.map((i) => (

@@ -109,9 +109,9 @@ form.inline input[type=number]{width:90px}
 .folhas{display:grid;gap:16px;justify-content:center}
 .folha{width:210mm;height:297mm;display:grid;background:#fff;color:#000;zoom:.45;box-shadow:0 2px 14px rgba(0,0,0,.4)}
 .etq{box-sizing:border-box;padding:calc(6mm*var(--k)) calc(8mm*var(--k));display:flex;flex-direction:column;align-items:center;text-align:center;overflow:hidden;outline:.2mm dashed #bbb;outline-offset:-.2mm}
-.etq-logo{width:calc(46mm*var(--k));height:auto;margin-bottom:calc(3mm*var(--k))}
+.etq-logo{width:calc(54mm*var(--k));height:auto;margin-bottom:calc(3mm*var(--k))}
 .etq-cta{font:600 calc(4.2mm*var(--k))/1.25 Arial,sans-serif;color:#222;margin-bottom:calc(4mm*var(--k))}
-.etq-qr{width:calc(64mm*var(--k));height:calc(64mm*var(--k));min-height:0;flex:0 1 auto;object-fit:contain;image-rendering:pixelated}
+.etq-qr{width:calc(70mm*var(--k));height:calc(70mm*var(--k));min-height:0;flex:0 1 auto;object-fit:contain;image-rendering:pixelated}
 .etq>*:not(.etq-qr){flex-shrink:0}
 .etq-code{font:800 calc(7mm*var(--k))/1 Arial,sans-serif;margin-top:calc(4mm*var(--k));letter-spacing:.3mm}
 .etq-ic{font:700 calc(5.4mm*var(--k))/1 Arial,sans-serif;margin-top:calc(2mm*var(--k));letter-spacing:.2mm}

@@ -330,6 +330,23 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 @keyframes pulsa{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.75}}
 .nav-barra{position:fixed;top:0;left:0;height:3px;width:100%;z-index:9999;background:linear-gradient(90deg,#FFC800,#2F7DE1,#E5197B);background-size:200% 100%;animation:barra 1s linear infinite}
 @keyframes barra{to{background-position:-200% 0}}
-.nav-veu{position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:color-mix(in srgb,var(--bg,#0a1a33) 72%,transparent);backdrop-filter:blur(2px);color:var(--text,#fff);animation:veu .25s ease .35s both}
+.nav-veu{position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:color-mix(in srgb,var(--bg,#0a1a33) 72%,transparent);backdrop-filter:blur(2px);color:var(--ink);animation:veu .25s ease .35s both}
 @keyframes veu{from{opacity:0}to{opacity:1}}
 @media print{.nav-barra,.nav-veu,.carregando{display:none !important}}
+
+/* ===== OS no padrão do Inforos ===== */
+.os-migalhas{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted);margin-bottom:8px;flex-wrap:wrap}
+.os-migalhas a{color:var(--muted);text-decoration:none}
+.os-migalhas b{color:var(--ink)}
+.os-acoes{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.os-acoes-meio{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;flex:1}
+.os-acoes .btn{white-space:nowrap}
+.os-b-azul,.os-b-laranja,.os-b-vermelho,.os-b-roxo{background:transparent !important;border:1.5px solid currentColor !important}
+.os-b-azul{color:#2563eb !important}.os-b-laranja{color:#d97706 !important}.os-b-vermelho{color:#dc2626 !important}.os-b-roxo{color:#7c3aed !important}
+.os-b-verde{background:#10b981 !important;border-color:#10b981 !important;color:#fff !important}
+.os-acao{position:relative}
+.os-acao>summary{list-style:none;cursor:pointer}
+.os-acao>summary::-webkit-details-marker{display:none}
+.os-acao[open]>.os-acao-form{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:30;width:min(640px,92vw);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.os-atividades{margin-top:18px;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+@media print{.os-acoes,.os-atividades,.os-migalhas{display:none !important}}

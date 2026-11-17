@@ -12,6 +12,8 @@ import { podeEditar, podeVer } from "@/lib/permissoes";
 import { lerConfig, preencher, saudacao } from "@/lib/config";
 
 
+const ICONE_ABA: Record<string, string> = { detalhes: "📄", equipamentos: "🖨️", checklists: "☑️", itens: "🧰", tarefas: "✅", anexos: "📎", assinatura: "✍️", logs: "🕘" };
+const ICONE_ETAPA: Record<string, string> = { entrada: "📥", orcamento: "📝", aberto: "📂", andamento: "🛠️", concluido: "✔️", faturado: "💵", finalizado: "🏁" };
 const ABAS: [string, string][] = [
   ["detalhes", "Detalhes da OS"],
   ["equipamentos", "Equipamentos"],
@@ -590,6 +592,7 @@ export default async function DetalheOS({
 
   return (
     <main className="wrap">
+      <nav className="os-migalhas"><Link href="/dashboard">🏠 Início</Link><span>/</span><Link href="/os?status=todas">Ordens de Serviço</Link><span>/</span><b>Editar</b></nav>
       <div className="headrow" style={{ marginBottom: 12 }}>
         <div>
           <h1 className="title">Editar OS</h1>
@@ -612,7 +615,10 @@ export default async function DetalheOS({
       <nav className="os-abas">
         {ABAS.map(([k, n]) => (
           <Link key={k} href={`/os/${o.id}?aba=${k}`} className={k === aba ? "ativa" : ""}>
-            {n}
+            {ICONE_ABA[k] ? `${ICONE_ABA[k]} ` : ""}{n}
+            {k === "equipamentos" && (vinc ?? []).length > 0 && <span className="os-cont">{(vinc ?? []).length}</span>}
+            {k === "checklists" && (checks ?? []).length > 0 && <span className="os-cont">{(checks ?? []).length}</span>}
+            {k === "itens" && (itens ?? []).length > 0 && <span className="os-cont">{(itens ?? []).length}</span>}
             {k === "logs" && (logs ?? []).length > 0 && <span className="os-cont">{(logs ?? []).length}</span>}
             {k === "tarefas" && pendentes.length > 0 && <span className="os-cont">{pendentes.length}</span>}
           </Link>
@@ -641,7 +647,7 @@ export default async function DetalheOS({
                 </div>
                 <div className="os-etapas">
                   {ETAPAS.map((e, i) => (
-                    <div key={e.k} className={i <= idxAtual ? "feita" : ""}>{e.n}</div>
+                    <div key={e.k} className={i <= idxAtual ? "feita" : ""}>{ICONE_ETAPA[e.k]} {e.n}</div>
                   ))}
                 </div>
                 <div className="os-barra"><i style={{ width: `${progresso}%` }} /><em>{progresso}%</em></div>
@@ -660,7 +666,7 @@ export default async function DetalheOS({
                 ))}
               </div>
             )}
-            <form action={salvar} className="os-form">
+            <form id="os-form" action={salvar} className="os-form">
               <input type="hidden" name="id" value={o.id} />
               <label className="field">Origem Cliente
                 <select name="origem" defaultValue={o.origem ?? ""} disabled={!editar}>
@@ -763,50 +769,77 @@ export default async function DetalheOS({
               <label className="field" style={{ gridColumn: "1/-1" }}>Orçamento Rápido (texto que sai na impressão)
                 <textarea name="quote_text" rows={4} defaultValue={o.quote_text ?? ""} disabled={!editar} placeholder="Ex.: serviços necessários e valores combinados com o cliente" />
               </label>
-              {editar && (
-                <div style={{ gridColumn: "1/-1" }}>
-                  <button className="btn primary">Salvar</button>
-                </div>
-              )}
             </form>
 
-            {editFin && (
-              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-                <details style={{ flex: "1 1 100%" }}>
-                  <summary className="btn secondary" style={{ display: "inline-block", cursor: "pointer" }}>Adiantamento</summary>
-                  <form action={adiantamento} className="grid g4" style={{ marginTop: 10 }}>
-                    <input type="hidden" name="order_id" value={o.id} />
-                    <label className="field">Valor (R$)<input name="amount" inputMode="decimal" required /></label>
-                    <label className="field">Vencimento<input type="date" name="due_date" /></label>
-                    <label className="field">Forma de pagamento<input name="payment_method" list="formas" /></label>
-                    <label className="field">Anotações<input name="notes" /></label>
-                    <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Pago</label>
-                    <div style={{ alignSelf: "end" }}><button className="btn primary">Lançar adiantamento</button></div>
-                  </form>
-                </details>
-                <details style={{ flex: "1 1 100%" }}>
-                  <summary className="btn secondary" style={{ display: "inline-block", cursor: "pointer" }}>Custo Interno</summary>
-                  <form action={custoInterno} className="grid g4" style={{ marginTop: 10 }}>
-                    <input type="hidden" name="order_id" value={o.id} />
-                    <input type="hidden" name="aba" value="detalhes" />
-                    <label className="field">Fornecedor / empresa<input name="party" /></label>
-                    <label className="field">Descrição<input name="description" placeholder={`Custo OS - #${o.number}`} /></label>
-                    <label className="field">Categoria<input name="category" defaultValue="Custos" /></label>
-                    <label className="field">Valor (R$)<input name="amount" inputMode="decimal" required /></label>
-                    <label className="field">Vencimento<input type="date" name="due_date" /></label>
-                    <label className="field">Anotações<input name="notes" /></label>
-                    <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Pago</label>
-                    <div style={{ alignSelf: "end" }}><button className="btn primary">Lançar custo</button></div>
-                  </form>
-                </details>
-                {o.status !== "faturado" && o.status !== "finalizado" && (
-                  <form action={faturar}>
-                    <input type="hidden" name="order_id" value={o.id} />
-                    <button className="btn primary">Faturar</button>
-                  </form>
+            <div className="os-acoes">
+              <Link className="btn secondary" href="/os"><span>↩</span> Voltar</Link>
+              <div className="os-acoes-meio">
+                <Link className="btn os-b-azul" href={`/os/${o.id}/imprimir`}>👁 Visualizar OS</Link>
+                {editFin && (
+                  <>
+                    <details className="os-acao">
+                      <summary className="btn os-b-laranja">💰 Adiantamento</summary>
+                      <form action={adiantamento} className="grid g4 os-acao-form">
+                        <input type="hidden" name="order_id" value={o.id} />
+                        <label className="field">Valor (R$)<input name="amount" inputMode="decimal" required /></label>
+                        <label className="field">Vencimento<input type="date" name="due_date" /></label>
+                        <label className="field">Forma de pagamento<input name="payment_method" list="formas" /></label>
+                        <label className="field">Anotações<input name="notes" /></label>
+                        <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Pago</label>
+                        <div style={{ alignSelf: "end" }}><button className="btn primary">Lançar adiantamento</button></div>
+                      </form>
+                    </details>
+                    <details className="os-acao">
+                      <summary className="btn os-b-vermelho">🧾 Custo Interno</summary>
+                      <form action={custoInterno} className="grid g4 os-acao-form">
+                        <input type="hidden" name="order_id" value={o.id} />
+                        <input type="hidden" name="aba" value="detalhes" />
+                        <label className="field">Fornecedor / empresa<input name="party" /></label>
+                        <label className="field">Descrição<input name="description" placeholder={`Custo OS - #${o.number}`} /></label>
+                        <label className="field">Categoria<input name="category" defaultValue="Custos" /></label>
+                        <label className="field">Valor (R$)<input name="amount" inputMode="decimal" required /></label>
+                        <label className="field">Vencimento<input type="date" name="due_date" /></label>
+                        <label className="field">Anotações<input name="notes" /></label>
+                        <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Pago</label>
+                        <div style={{ alignSelf: "end" }}><button className="btn primary">Lançar custo</button></div>
+                      </form>
+                    </details>
+                    {o.status !== "faturado" && o.status !== "finalizado" && (
+                      <form action={faturar} style={{ display: "inline" }}>
+                        <input type="hidden" name="order_id" value={o.id} />
+                        <button className="btn os-b-roxo">💵 Faturar</button>
+                      </form>
+                    )}
+                  </>
                 )}
               </div>
-            )}
+              {editar ? <button form="os-form" className="btn os-b-verde">💾 Salvar OS</button> : <span />}
+            </div>
+
+            <section className="os-atividades">
+              <h3 style={{ margin: 0 }}>💬 Atividades Internas <span className="os-cont">{(logs ?? []).length}</span> <small className="muted">Visível apenas para sua equipe</small></h3>
+              <table className="table" style={{ marginTop: 10 }}>
+                <thead><tr><th style={{ width: 130 }}>Data</th><th style={{ width: 160 }}>Usuário</th><th>Texto</th></tr></thead>
+                <tbody>
+                  {(logs ?? []).slice(0, 5).map((l: any) => (
+                    <tr key={l.id}>
+                      <td>{fmtDH(l.created_at)}</td>
+                      <td>{l.user_name ?? "—"}</td>
+                      <td dangerouslySetInnerHTML={{ __html: String(l.text).replace(/<(?!\/?b>)[^>]*>/g, "") }} />
+                    </tr>
+                  ))}
+                  {!(logs ?? []).length && <tr><td colSpan={3} className="muted" style={{ textAlign: "center" }}>Sem atividades ainda.</td></tr>}
+                </tbody>
+              </table>
+              {(logs ?? []).length > 5 && <Link href={`/os/${o.id}?aba=logs`} className="muted">Ver todas as {(logs ?? []).length} atividades →</Link>}
+              {editar && (
+                <form action={adicionarAtividade} className="inline" style={{ marginTop: 10 }}>
+                  <input type="hidden" name="order_id" value={o.id} />
+                  <input name="texto" placeholder="Descreva o que aconteceu…" style={{ flex: 1, minWidth: 240 }} />
+                  <button className="btn secondary">+ Adicionar atividade</button>
+                </form>
+              )}
+            </section>
 
             <div id="aprovacao" style={{ marginTop: 18, borderTop: "1px solid var(--line)", paddingTop: 14 }}>
               <h3 style={{ marginTop: 0 }}>Aprovação do orçamento</h3>

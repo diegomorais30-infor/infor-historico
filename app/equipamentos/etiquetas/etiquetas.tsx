@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 
 type Item = { id: string; code: string; marca: string; serie: string; token: string; tag: string; cliente: string };
@@ -31,15 +31,23 @@ export default function Etiquetas({ itens, whatsapp, empresa, slug }: { itens: I
 
   const escolhidos = useMemo(() => itens.filter((i) => sel.has(i.id)), [itens, sel]);
 
+  // Gera só os QR codes que faltam (guarda os já feitos) e cede a vez ao navegador entre um e outro,
+  // para marcar/desmarcar continuar respondendo mesmo com muitos selecionados.
+  const cacheQr = useRef<Record<string, string>>({});
   useEffect(() => {
     const base = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
     let vivo = true;
     (async () => {
-      const novo: Record<string, string> = {};
+      let mudou = false;
       for (const i of escolhidos) {
-        novo[i.id] = await QRCode.toDataURL(i.tag && slug ? `${base}/p/${slug}/${encodeURIComponent(i.tag)}` : `${base}/e/${i.token}`, { width: 700, margin: 0, errorCorrectionLevel: "M" });
+        if (!vivo) return;
+        if (cacheQr.current[i.id]) continue;
+        cacheQr.current[i.id] = await QRCode.toDataURL(i.tag && slug ? `${base}/p/${slug}/${encodeURIComponent(i.tag)}` : `${base}/e/${i.token}`, { width: 700, margin: 0, errorCorrectionLevel: "M" });
+        mudou = true;
+        await new Promise((r) => setTimeout(r, 0));
       }
-      if (vivo) setQrs(novo);
+      if (vivo) setQrs({ ...cacheQr.current });
+      void mudou;
     })();
     return () => {
       vivo = false;

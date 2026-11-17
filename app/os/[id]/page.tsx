@@ -604,7 +604,7 @@ export default async function DetalheOS({
             </form>
           )}
           <Link className="btn secondary" href={o.approval_token ? `/orcamento/${o.approval_token}` : `/os/${o.id}?aba=detalhes#aprovacao`}>O.S Cliente</Link>
-          <Link className="btn secondary" href={`/os/${o.id}/imprimir`}>Imprimir</Link>
+          <Link className="btn secondary" href={`/os/${o.id}/imprimir`}>Imprimir</Link>{" "}<Link className="btn secondary" href={`/os/${o.id}/imprimir?termos=0`}>Imprimir sem termos</Link>{" "}<Link className="btn secondary" href={`/os/${o.id}/entrega-insumos`}>Entrega de insumos</Link>
           <Link className="btn secondary" href="/os">Voltar</Link>
         </div>
       </div>

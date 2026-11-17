@@ -10,8 +10,9 @@ import BotaoImprimir from "./botao";
 const dataHora = (v: string | null | undefined) =>
   v ? new Date(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
-export default async function ImprimirOS({ params }: { params: Promise<{ id: string }> }) {
+export default async function ImprimirOS({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ termos?: string }> }) {
   const { id } = await params;
+  const comTermos = (await searchParams).termos !== "0";
   const { supabase, perfil } = await getContexto();
   const { data } = await supabase
     .from("service_orders")
@@ -65,7 +66,9 @@ export default async function ImprimirOS({ params }: { params: Promise<{ id: str
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
       <div className="no-print" style={{ marginBottom: 12 }}>
-        <BotaoImprimir />
+        <BotaoImprimir />{" "}
+        <a className="btn secondary" href={`/os/${id}/imprimir${comTermos ? "?termos=0" : ""}`}>{comTermos ? "Ver sem termos" : "Ver com termos"}</a>{" "}
+        <a className="btn secondary" href={`/os/${id}/entrega-insumos`}>Entrega de insumos</a>
       </div>
       <div className="os-folha">
         <section style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box", minHeight: "277mm", display: "flex", flexDirection: "column" }}>
@@ -173,7 +176,7 @@ export default async function ImprimirOS({ params }: { params: Promise<{ id: str
           ))}
 
           {/* Termo de entrada / garantia de saída */}
-          {emp?.entry_terms && (<>
+          {comTermos && emp?.entry_terms && (<>
             <div style={rotulo}>{["concluido", "faturado", "finalizado"].includes(o.status) && emp?.exit_terms ? "Termo Saída" : "Termo Entrada"}</div>
             <p style={{ ...texto, fontSize: 11.5 }}>
               {["concluido", "faturado", "finalizado"].includes(o.status) && emp?.exit_terms ? emp.exit_terms : emp.entry_terms}

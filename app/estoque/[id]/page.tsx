@@ -32,6 +32,8 @@ async function salvar(fd: FormData) {
       code: String(fd.get("code") || "").trim() || null,
       group_id: String(fd.get("group_id") || "") || null,
       minimum_stock: num(fd.get("minimum_stock")),
+      garantia_dias: fd.get("garantia_dias") ? Math.round(num(fd.get("garantia_dias"))) : null,
+      garantia_fornecedor_dias: fd.get("garantia_fornecedor_dias") ? Math.round(num(fd.get("garantia_fornecedor_dias"))) : null,
       controla_estoque: fd.get("controla_estoque") === "on",
       active: fd.get("active") === "on",
     })
@@ -167,6 +169,14 @@ export default async function Produto({ params, searchParams }: { params: Promis
             <label className="field" style={{ gridColumn: "span 2" }}>
               Descrição do produto
               <input name="name" defaultValue={part.name} required disabled={dis} />
+            </label>
+            <label className="field">
+              Garantia (dias)
+              <input name="garantia_dias" type="number" min={0} defaultValue={(part as any).garantia_dias ?? ""} disabled={dis} />
+            </label>
+            <label className="field">
+              Garantia do fornecedor (dias)
+              <input name="garantia_fornecedor_dias" type="number" min={0} defaultValue={(part as any).garantia_fornecedor_dias ?? ""} disabled={dis} />
             </label>
             <label className="field">
               Unidade

@@ -24,6 +24,7 @@ export default function Solicitar({ token, whatsapp, code, equipamento, local }:
   const [loading, setLoading] = useState(false);
   const [protocolo, setProtocolo] = useState("");
   const [numeroZap, setNumeroZap] = useState<string | null>(whatsapp);
+  const [cliente, setCliente] = useState("");
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -43,9 +44,10 @@ export default function Solicitar({ token, whatsapp, code, equipamento, local }:
     }
     setProtocolo(data.protocol);
     setNumeroZap(data.whatsapp ?? whatsapp);
+    setCliente(data.client ?? "");
   }
 
-  const mensagemPedido = `Olá! Abri o chamado ${protocolo} pelo QR code.\nImpressora: ${code} (${equipamento})${
+  const mensagemPedido = `Olá! Abri o chamado ${protocolo} pelo QR code.${cliente ? `\nCliente: ${cliente}` : ""}\nImpressora: ${code} (${equipamento})${
     local ? `\nLocal: ${local}` : ""
   }\nProblema: ${descricao}\nContato: ${nome} - ${telefone}`;
 

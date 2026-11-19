@@ -1,3 +1,4 @@
+import { erroSenha } from "@/lib/erro-senha";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getContexto } from "@/lib/contexto";
@@ -189,7 +190,7 @@ async function criarConta(formData: FormData) {
   }
   if (erroConta) {
     await supabase.from("company_invites").delete().eq("id", convite!.id).is("accepted_at", null);
-    falha("Não foi possível criar a conta: " + erroConta);
+    falha("Não foi possível criar a conta: " + erroSenha(erroConta));
   }
   revalidatePath("/usuarios");
   redirect("/usuarios?ok=" + encodeURIComponent(`Conta criada para ${email}. Passe a senha provisória a ela; no primeiro acesso será pedida uma senha nova.`));

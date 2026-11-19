@@ -11,7 +11,7 @@ async function trocar(formData: FormData) {
   if (!user) redirect("/login");
   const senha = String(formData.get("senha") || "");
   const confirma = String(formData.get("confirma") || "");
-  if (senha.length < 10) redirect("/trocar-senha?erro=" + encodeURIComponent("Use pelo menos 10 caracteres."));
+  if (senha.length < 8) redirect("/trocar-senha?erro=" + encodeURIComponent("Use pelo menos 8 caracteres."));
   if (senha !== confirma) redirect("/trocar-senha?erro=" + encodeURIComponent("As senhas não conferem."));
   const { error } = await supabase.auth.updateUser({ password: senha, data: { must_change_password: false } });
   if (error) redirect("/trocar-senha?erro=" + encodeURIComponent(erroSenha(error.message)));
@@ -23,16 +23,24 @@ export default async function TrocarSenha({ searchParams }: { searchParams: Prom
   return (
     <main className="wrap" style={{ maxWidth: 440 }}>
       <h1 className="title">Defina sua senha</h1>
-      <p className="muted">Sua conta foi criada com uma senha provisória. Escolha agora uma senha só sua: 10 ou mais caracteres, misturando letras, números e símbolo. Não use nome, datas nem sequências como 123456.</p>
+      <p className="muted">Sua conta foi criada com uma senha provisória. Escolha agora uma senha só sua.</p>
+      <div className="card" style={{ margin: "14px 0", borderLeft: "4px solid #f59e0b" }}>
+        <strong>⚠ Atenção: a senha precisa ser forte</strong>
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20, lineHeight: 1.6 }}>
+          <li>No mínimo <strong>8 caracteres</strong>, misturando letras, números e um símbolo (ex.: ! - @).</li>
+          <li>Não use seu nome, o nome da empresa, datas nem sequências como <em>12345678</em> ou <em>senha123</em>.</li>
+          <li>Senhas comuns ou já vazadas na internet são recusadas pelo sistema.</li>
+        </ul>
+      </div>
       {erro && <div className="error" style={{ margin: "14px 0" }}>{erro}</div>}
       <form action={trocar} className="card" style={{ display: "grid", gap: 12 }}>
         <label className="field">
           Nova senha
-          <input name="senha" type="password" required minLength={10} autoComplete="new-password" />
+          <input name="senha" type="password" required minLength={8} autoComplete="new-password" />
         </label>
         <label className="field">
           Repita a nova senha
-          <input name="confirma" type="password" required minLength={10} autoComplete="new-password" />
+          <input name="confirma" type="password" required minLength={8} autoComplete="new-password" />
         </label>
         <button className="btn primary">Salvar senha</button>
       </form>

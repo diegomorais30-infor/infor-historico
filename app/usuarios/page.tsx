@@ -319,6 +319,9 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
         <label className="field">
           Senha provisória
           <input name="senha" type="text" required minLength={8} autoComplete="off" />
+          <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+            ⚠ Mínimo 8 caracteres, misturando letras, números e símbolo. Não use nome, datas nem sequências (12345678, senha123): senhas comuns ou vazadas são recusadas.
+          </span>
         </label>
         <label className="field">
           Perfil

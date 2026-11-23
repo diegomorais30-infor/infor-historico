@@ -5,8 +5,9 @@ import { podeVer } from "@/lib/permissoes";
 import CabecalhoEmpresa, { CAMPOS_EMPRESA } from "@/components/cabecalho-empresa";
 import BotaoImprimir from "@/components/botao-imprimir";
 
-export default async function ImprimirVenda({ params }: { params: Promise<{ id: string }> }) {
+export default async function ImprimirVenda({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ vias?: string }> }) {
   const { id } = await params;
+  const duasVias = (await searchParams).vias !== "1";
   const { supabase, perfil } = await getContexto();
   if (!podeVer(perfil?.role, (perfil as any)?.permissions, "vendas")) notFound();
   const { data: v } = await supabase
@@ -26,8 +27,11 @@ export default async function ImprimirVenda({ params }: { params: Promise<{ id: 
 
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
-      <div className="no-print" style={{ marginBottom: 12 }}><BotaoImprimir /></div>
-      <div className="doc-folha" style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box" }}>
+      <div className="no-print" style={{ marginBottom: 12 }}><BotaoImprimir />{" "}<a className="btn secondary" href={`/vendas/${id}/imprimir?vias=${duasVias ? "1" : "2"}`}>{duasVias ? "Uma via por folha" : "2 vias por folha"}</a></div>
+      <div className={duasVias ? "vias2" : undefined}>
+      {(duasVias ? ["Via da empresa", "Via do cliente"] : [null]).map((rot) => (
+      <div key={rot ?? "u"} className={`doc-folha${duasVias ? " via" : ""}`} style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box" }}>
+        {rot && <div className="via-rotulo">{rot}</div>}
         <CabecalhoEmpresa
           emp={emp as any}
           linhaExtra={(v as any).seller ? <div><b>Vendedor:</b> {(v as any).seller}</div> : null}
@@ -65,6 +69,8 @@ export default async function ImprimirVenda({ params }: { params: Promise<{ id: 
           <div style={{ flex: 1, textAlign: "center", borderTop: "1px solid #666", paddingTop: 4 }}>{c.name}</div>
           <div style={{ flex: 1, textAlign: "center", borderTop: "1px solid #666", paddingTop: 4 }}>{(emp as any)?.name}</div>
         </div>
+      </div>
+      ))}
       </div>
     </main>
   );

@@ -10,9 +10,11 @@ import BotaoImprimir from "./botao";
 const dataHora = (v: string | null | undefined) =>
   v ? new Date(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
-export default async function ImprimirOS({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ termos?: string }> }) {
+export default async function ImprimirOS({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ termos?: string; vias?: string }> }) {
   const { id } = await params;
-  const comTermos = (await searchParams).termos !== "0";
+  const sp = await searchParams;
+  const comTermos = sp.termos !== "0";
+  const duasVias = sp.vias !== "1";
   const { supabase, perfil } = await getContexto();
   const { data } = await supabase
     .from("service_orders")
@@ -70,11 +72,14 @@ export default async function ImprimirOS({ params, searchParams }: { params: Pro
     <main className="wrap" style={{ maxWidth: 820 }}>
       <div className="no-print" style={{ marginBottom: 12 }}>
         <BotaoImprimir />{" "}
-        <a className="btn secondary" href={`/os/${id}/imprimir${comTermos ? "?termos=0" : ""}`}>{comTermos ? "Ver sem termos" : "Ver com termos"}</a>{" "}
+        <a className="btn secondary" href={`/os/${id}/imprimir?termos=${comTermos ? "0" : "1"}&vias=${duasVias ? "2" : "1"}`}>{comTermos ? "Ver sem termos" : "Ver com termos"}</a>{" "}
+        <a className="btn secondary" href={`/os/${id}/imprimir?termos=${comTermos ? "1" : "0"}&vias=${duasVias ? "1" : "2"}`}>{duasVias ? "Uma via por folha" : "2 vias por folha"}</a>{" "}
         <a className="btn secondary" href={`/os/${id}/entrega-insumos`}>Entrega de insumos</a>
       </div>
-      <div className="os-folha">
-        <section style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box", minHeight: "277mm", display: "flex", flexDirection: "column" }}>
+      <div className={`os-folha${duasVias ? " vias2" : ""}`}>
+        {(duasVias ? ["Via da empresa", "Via do cliente"] : [null]).map((rot) => (
+        <section key={rot ?? "u"} className={duasVias ? "via" : undefined} style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box", minHeight: duasVias ? undefined : "277mm", display: "flex", flexDirection: "column" }}>
+          {rot && <div className="via-rotulo">{rot}</div>}
           {/* Cabeçalho: logo + dados da empresa + status da OS */}
           <div style={{ display: "flex", gap: 14, borderTop: "1px solid #ddd", borderBottom: "1px solid #ddd", padding: "8px 0" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -194,6 +199,7 @@ export default async function ImprimirOS({ params, searchParams }: { params: Pro
             <div style={{ flex: 1, textAlign: "center" }}>{emp?.name}<div style={{ borderTop: "1px solid #666", marginTop: 26 }} /></div>
           </div>
         </section>
+        ))}
 
         {/* Página de anexos (fotos) */}
         {fotos.length > 0 && (

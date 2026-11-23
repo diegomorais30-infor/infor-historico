@@ -414,3 +414,14 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 
 .card:has(.busca-item),section:has(.busca-item){overflow:visible !important}
 .busca-item .cfg-pop{z-index:60}
+
+/* Duas vias (empresa / cliente) na mesma folha A4 */
+.vias2{display:flex;flex-direction:column;gap:0}
+.vias2 .via{box-sizing:border-box;position:relative}
+.vias2 .via-rotulo{position:absolute;top:2mm;right:4mm;font:700 9px Arial,sans-serif;color:#555;text-transform:uppercase;letter-spacing:.08em}
+.vias2 .via + .via{border-top:1px dashed #777}
+@media print{
+  .vias2{zoom:.62}
+  .vias2 .via{break-inside:avoid;page-break-inside:avoid;min-height:0 !important}
+}
+@media screen{.vias2 .via{border-bottom:1px solid #ccc}}

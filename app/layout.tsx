@@ -10,6 +10,7 @@ import ProgressoNavegacao from "@/components/progresso-navegacao";
 import TabelasMoveis from "@/components/tabelas-moveis";
 import InstalarApp from "@/components/instalar-app";
 import { podeVer } from "@/lib/permissoes";
+import BotaoVoltar from "@/components/botao-voltar";
 import MenuLateral, { type ItemMenu } from "@/components/menu-lateral";
 
 export const viewport = { themeColor: "#0a1a33" };
@@ -132,6 +133,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <MenuLateral logo={<Logo size={60} />} itens={itens} />
             <div className="conteudo">
               <div className="userbar">
+                <BotaoVoltar />
                 {empresa && <span className="muted">{empresa}</span>}
                 <LogoutButton />
               </div>

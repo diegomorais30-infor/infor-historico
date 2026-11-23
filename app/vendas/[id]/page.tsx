@@ -141,6 +141,44 @@ async function faturar(fd: FormData) {
   redirect(volta(id));
 }
 
+async function reabrir(fd: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(fd.get("id"));
+  const { data: lanc } = await supabase.from("finance_entries").select("id, paid_at").eq("sale_id", id);
+  if ((lanc ?? []).some((l: any) => l.paid_at))
+    redirect(volta(id, "?erro=" + encodeURIComponent("Há lançamento já recebido ligado a esta venda. Desfaça o recebimento no Financeiro antes de reabrir.")));
+  await supabase.from("finance_entries").delete().eq("sale_id", id);
+  await supabase.from("sales").update({ billed: false }).eq("id", id);
+  revalidatePath(volta(id));
+  redirect(volta(id));
+}
+
+async function excluir(fd: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const id = String(fd.get("id"));
+  if (fd.get("confirmo") !== "on") redirect(volta(id, "?erro=" + encodeURIComponent("Marque a confirmação para excluir a venda.")));
+  const { data: v } = await supabase.from("sales").select("number, stock_applied").eq("id", id).single();
+  if (!v) redirect("/vendas");
+  const { data: lanc } = await supabase.from("finance_entries").select("id, paid_at").eq("sale_id", id);
+  if ((lanc ?? []).some((l: any) => l.paid_at))
+    redirect(volta(id, "?erro=" + encodeURIComponent("Há lançamento já recebido ligado a esta venda. Desfaça o recebimento no Financeiro antes de excluir.")));
+  if ((v as any).stock_applied) {
+    const { data: its } = await supabase.from("sale_items").select("part_id, quantity").eq("sale_id", id).not("part_id", "is", null);
+    for (const i of (its ?? []) as any[]) {
+      await supabase.from("stock_movements").insert({ part_id: i.part_id, quantity: Number(i.quantity), reason: "estorno", notes: `Estorno da venda #${(v as any).number} excluída` });
+    }
+  }
+  await supabase.from("finance_entries").delete().eq("sale_id", id);
+  await supabase.from("quotes").update({ converted_sale_id: null }).eq("converted_sale_id", id);
+  await supabase.from("sale_items").delete().eq("sale_id", id);
+  const { error } = await supabase.from("sales").delete().eq("id", id);
+  if (error) redirect(volta(id, "?erro=" + encodeURIComponent("Não foi possível excluir: " + error.message)));
+  revalidatePath("/vendas");
+  redirect("/vendas");
+}
+
 export default async function Venda({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ erro?: string }> }) {
   const { id } = await params;
   const { erro } = await searchParams;
@@ -237,6 +275,23 @@ export default async function Venda({ params, searchParams }: { params: Promise<
             <label className="field">Forma de pagamento<input name="payment_method" list="formas" placeholder="Pix, Dinheiro, Cartão…" /><datalist id="formas">{["Pix", "Dinheiro", "Cartão de crédito", "Cartão de débito", "Boleto", "Transferência"].map((f) => <option key={f} value={f} />)}</datalist></label>
             <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center" }}><input type="checkbox" name="pago" /> Já recebido</label>
             <div style={{ alignSelf: "end" }}><button className="btn primary">Faturar venda</button></div>
+          </form>
+        </section>
+      )}
+      {editFin && (
+        <section className="card" style={{ marginTop: 12 }}>
+          <h2>Corrigir venda</h2>
+          {v.billed && (
+            <form action={reabrir} style={{ marginBottom: 12 }}>
+              <input type="hidden" name="id" value={id} />
+              <p className="muted">Reabre a venda para editar itens, desconto e frete. O lançamento no financeiro é removido e gerado de novo ao faturar. O estoque não é refeito: ajuste em Movimentação se mudar produtos.</p>
+              <button className="btn secondary">✏️ Reabrir para editar</button>
+            </form>
+          )}
+          <form action={excluir} className="grid g4">
+            <input type="hidden" name="id" value={id} />
+            <label className="field" style={{ flexDirection: "row", gap: 8, alignItems: "center", gridColumn: "span 3" }}><input type="checkbox" name="confirmo" style={{ width: "auto" }} /> Confirmo que quero excluir a venda #{v.number} (duplicada ou errada). Remove os itens e o lançamento do financeiro e devolve os produtos ao estoque.</label>
+            <div style={{ alignSelf: "end" }}><button className="btn" style={{ background: "#c0392b", color: "#fff" }}>🗑 Excluir venda</button></div>
           </form>
         </section>
       )}

@@ -284,6 +284,14 @@ async function salvar(formData: FormData) {
     .eq("id", id);
   if (error) redirect(`/os/${id}?erro=` + encodeURIComponent(error.message));
   const a: any = antes ?? {};
+  // Ao mudar o status para Faturado/Finalizado pelo formulário, garante a receita no financeiro (se a OS ainda não tem nenhuma).
+  if (["faturado", "finalizado"].includes(status)) {
+    const { count } = await supabase.from("finance_entries").select("*", { count: "exact", head: true }).eq("order_id", id).eq("kind", "receita");
+    if (!count) {
+      const r = await gerarFinanceiroOs(supabase, id);
+      if (r.erro && (r.total ?? 0) > 0) redirect(`/os/${id}?erro=` + encodeURIComponent("OS salva, mas o financeiro não foi gerado: " + r.erro));
+    }
+  }
   if (a.status && a.status !== status) await registrar(supabase, id, `Status alterado de <b>${STATUS_OS[a.status] ?? a.status}</b> para <b>${STATUS_OS[status] ?? status}</b>`);
   const sit = texto("situacao");
   if ((a.situacao ?? null) !== sit) await registrar(supabase, id, `Situação alterada de <b>${a.situacao ?? "—"}</b> para <b>${sit ?? "—"}</b>`);
@@ -348,15 +356,11 @@ async function salvarFinanceiro(formData: FormData) {
   redirect(`/os/${order_id}?aba=itens&ok=1`);
 }
 
-async function faturar(formData: FormData) {
-  "use server";
-  const supabase = await createClient();
-  const order_id = String(formData.get("order_id"));
+// Gera a receita da OS no financeiro (fatura + adiantamento). Idempotente: não duplica se já existir.
+async function gerarFinanceiroOs(supabase: any, order_id: string): Promise<{ erro?: string; total?: number }> {
   const { data: os } = await supabase.from("service_orders").select("number, client_id, status, clients(name)").eq("id", order_id).single();
-  if (!os) redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("OS não encontrada."));
+  if (!os) return { erro: "OS não encontrada." };
   const o: any = os;
-  if (!["concluido", "faturado"].includes(o.status))
-    redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("Conclua a OS antes de faturar."));
   const [{ data: itens }, { data: precos }, { data: fin }] = await Promise.all([
     supabase.from("service_order_items").select("id, quantity").eq("order_id", order_id),
     supabase.from("item_prices").select("item_id, unit_price"),
@@ -369,7 +373,7 @@ async function faturar(formData: FormData) {
   const total = Math.max(subtotal - Number(f.discount ?? 0), 0);
   const adiant = Math.min(Number(f.advance ?? 0), total);
   const resto = total - adiant;
-  if (total <= 0) redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("Lance os valores da OS antes de faturar."));
+  if (total <= 0) return { erro: "Lance os valores da OS antes de faturar.", total };
   const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
   const base = {
     kind: "receita",
@@ -385,7 +389,7 @@ async function faturar(formData: FormData) {
       { ...base, origin: "os_fatura", description: `OS #${o.number} · fatura`, amount: resto, due_date: f.due_date ?? hoje },
       { onConflict: "order_id,origin", ignoreDuplicates: true }
     );
-    if (error) redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent(error.message));
+    if (error) return { erro: error.message, total };
   }
   if (adiant > 0) {
     await supabase.from("finance_entries").upsert(
@@ -393,6 +397,19 @@ async function faturar(formData: FormData) {
       { onConflict: "order_id,origin", ignoreDuplicates: true }
     );
   }
+  return { total };
+}
+
+async function faturar(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const { data: os } = await supabase.from("service_orders").select("status").eq("id", order_id).single();
+  if (!os) redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("OS não encontrada."));
+  if (!["concluido", "faturado"].includes((os as any).status))
+    redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("Conclua a OS antes de faturar."));
+  const r = await gerarFinanceiroOs(supabase, order_id);
+  if (r.erro) redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent(r.erro));
   await supabase.from("service_orders").update({ status: "faturado" }).eq("id", order_id);
   revalidatePath(`/os/${order_id}`);
   redirect(`/os/${order_id}?aba=itens&ok=1`);

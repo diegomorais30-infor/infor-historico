@@ -1,7 +1,7 @@
 "use server";
 import { createClient } from "@/lib/supabase/server";
 
-export type NovoCliente = { nome: string; celular?: string; documento?: string; telefone?: string; email?: string; tipo?: "fisica" | "juridica"; cep?: string };
+export type NovoCliente = { nome: string; celular?: string; documento?: string; telefone?: string; email?: string; tipo?: "fisica" | "juridica"; cep?: string; trade_name?: string; address?: string; street_number?: string; complement?: string; neighborhood?: string; city?: string; state?: string; contact_name?: string; notes?: string };
 
 // Cadastro rápido de cliente durante a abertura da OS. Devolve o cliente criado (ou o já existente com o mesmo documento).
 export async function criarClienteRapido(d: NovoCliente): Promise<{ id?: string; name?: string; aviso?: string; erro?: string }> {
@@ -27,8 +27,17 @@ export async function criarClienteRapido(d: NovoCliente): Promise<{ id?: string;
       phone: t(d.telefone),
       email: t(d.email),
       cep: t(d.cep),
-      person_type: d.tipo === "juridica" ? "juridica" : "fisica",
-      origin: "Cadastro rápido (OS)",
+      trade_name: t(d.trade_name),
+      address: t(d.address),
+      street_number: t(d.street_number),
+      complement: t(d.complement),
+      neighborhood: t(d.neighborhood),
+      city: t(d.city),
+      state: t(d.state)?.toUpperCase().slice(0, 2) ?? null,
+      contact_name: t(d.contact_name),
+      notes: t(d.notes),
+      person_type: d.tipo === "juridica" ? "pj" : "pf",
+      origin: "Cadastro rápido",
       registered_at: new Date().toISOString(),
     })
     .select("id, name")

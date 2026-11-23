@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { criarClienteRapido } from "@/app/os/nova/actions";
 
+const F0 = { nome: "", celular: "", documento: "", telefone: "", email: "", tipo: "fisica" as "fisica" | "juridica", cep: "", trade_name: "", address: "", street_number: "", complement: "", neighborhood: "", city: "", state: "", contact_name: "", notes: "" };
 type C = { id: string; name: string; document?: string | null };
 
 export default function SeletorCliente({ clientes, inicial, onChange }: { clientes: C[]; inicial?: string; onChange?: (id: string) => void }) {
@@ -13,7 +14,8 @@ export default function SeletorCliente({ clientes, inicial, onChange }: { client
   const [msg, setMsg] = useState("");
   useEffect(() => { onChange?.(id); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [salvando, setSalvando] = useState(false);
-  const [f, setF] = useState({ nome: "", celular: "", documento: "", telefone: "", email: "", tipo: "fisica" as "fisica" | "juridica", cep: "" });
+  const [f, setF] = useState({ ...F0 });
+  const [mais, setMais] = useState(false);
 
   const achados = useMemo(() => {
     const t = texto.trim().toLowerCase();
@@ -31,7 +33,8 @@ export default function SeletorCliente({ clientes, inicial, onChange }: { client
     setId(r.id);
     setTexto(r.name ?? "");
     setModal(false);
-    setF({ nome: "", celular: "", documento: "", telefone: "", email: "", tipo: "fisica", cep: "" });
+    setF({ ...F0 });
+    setMais(false);
     if (r.aviso) setMsg(r.aviso);
   }
 
@@ -92,12 +95,26 @@ export default function SeletorCliente({ clientes, inicial, onChange }: { client
                 <select value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value as any })}><option value="fisica">Física</option><option value="juridica">Jurídica</option></select>
               </label>
             </div>
+            <button type="button" className="btn secondary" style={{ marginTop: 10 }} onClick={() => setMais((m) => !m)}>{mais ? "− Menos informações" : "+ Mais informações (endereço e outros dados)"}</button>
+            {mais && (
+              <div className="grid g2" style={{ marginTop: 10 }}>
+                {campo("trade_name", "Nome fantasia")}
+                {campo("contact_name", "Pessoa de contato")}
+                <div style={{ gridColumn: "1/-1" }}>{campo("address", "Endereço (rua / avenida)")}</div>
+                {campo("street_number", "Número")}
+                {campo("complement", "Complemento")}
+                {campo("neighborhood", "Bairro")}
+                {campo("city", "Cidade")}
+                {campo("state", "UF", "MG")}
+                <div style={{ gridColumn: "1/-1" }}>{campo("notes", "Observações")}</div>
+              </div>
+            )}
             {msg && <div className="error" style={{ marginTop: 10 }}>{msg}</div>}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 14 }}>
               <button type="button" className="btn secondary" onClick={() => setModal(false)}>Cancelar</button>
               <button type="button" className="btn primary" disabled={salvando} onClick={salvar}>{salvando ? "Salvando…" : "Adicionar"}</button>
             </div>
-            <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>O restante do cadastro (endereço, observações) pode ser completado depois em Clientes.</p>
+            <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>Outros dados (inscrições, aniversário, tipo) podem ser completados depois em Clientes.</p>
           </div>
         </div>
       )}

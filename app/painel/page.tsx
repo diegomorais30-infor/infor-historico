@@ -122,8 +122,18 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
     tudo(() => supabase.from("parts").select("id,legacy_ref,pc:legacy_data->>precoCompra").order("id")),
   ]);
   const nomePessoa = (id: string | null) => ((pessoas.data as any[]) ?? []).find((p) => p.id === id)?.full_name as string | undefined;
-  const tecnico = (o: any) => nomePessoa(o.technician_id) ?? (o.tec ? String(o.tec) : "Sem técnico");
-  const atendente = (o: any) => (o.atd ? String(o.atd) : nomePessoa(o.created_by) ?? "Sem atendente");
+  // Nome vindo do Inforos ("Diego Dias De Morais") vira o nome da conta no InforGest ("Diego Morais"):
+  // mesmo primeiro nome e (mesmo último sobrenome ou único com esse primeiro nome)
+  const perfis = ((pessoas.data as any[]) ?? []).map((p) => ({ nome: String(p.full_name ?? ""), t: norm(p.full_name).split(/\s+/) }));
+  const unifica = (nome: any) => {
+    const t = norm(nome).split(/\s+/).filter(Boolean);
+    if (!t.length) return undefined;
+    const mesmos = perfis.filter((p) => p.t[0] === t[0]);
+    const achou = mesmos.find((p) => t.includes(p.t[p.t.length - 1])) ?? (mesmos.length === 1 ? mesmos[0] : undefined);
+    return achou?.nome ?? String(nome).trim();
+  };
+  const tecnico = (o: any) => nomePessoa(o.technician_id) ?? unifica(o.tec) ?? "Sem técnico";
+  const atendente = (o: any) => unifica(o.atd) ?? nomePessoa(o.created_by) ?? "Sem atendente";
   const custoPorId = new Map((pecas as any[]).map((p) => [p.id, Number(p.pc) || 0]));
   const custoPorRef = new Map((pecas as any[]).filter((p) => p.legacy_ref).map((p) => [String(p.legacy_ref), Number(p.pc) || 0]));
 
@@ -218,14 +228,16 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
   const vendasPer = vendas.filter((v: any) => no(dataCol(v.sold_at), ini, fim));
   const totalVendas = soma(vendasPer), totalVendasAnt = soma(vendas.filter((v: any) => no(dataCol(v.sold_at), antIni, antFim)));
   const porVendedor: Record<string, number> = {}, porCliente: Record<string, number> = {};
-  for (const v of vendasPer as any[]) { somaEm(porVendedor, v.seller || "Sem vendedor", Number(v.total)); somaEm(porCliente, v.clients?.name ?? "Consumidor", Number(v.total)); }
+  for (const v of vendasPer as any[]) { somaEm(porVendedor, unifica(v.seller) ?? "Sem vendedor", Number(v.total)); somaEm(porCliente, v.clients?.name ?? "Consumidor", Number(v.total)); }
   const produtos: Record<string, { qtd: number; valor: number }> = {};
   const idsVenda = (vendasPer as any[]).map((v) => v.id);
   for (let i = 0; i < idsVenda.length; i += 150) {
-    const { data } = await supabase.from("sale_items").select("description,quantity,unit_price,discount").in("sale_id", idsVenda.slice(i, i + 150));
+    const { data } = await supabase.from("sale_items").select("description,quantity,unit_price,discount,leg:legacy_data->>valor").in("sale_id", idsVenda.slice(i, i + 150));
     for (const it of (data as any[]) ?? []) {
       const k = String(it.description ?? "(sem descrição)").split(" — ")[0].trim(); const qtd = Number(it.quantity) || 0;
-      (produtos[k] ??= { qtd: 0, valor: 0 }).qtd += qtd; produtos[k].valor += qtd * (Number(it.unit_price) || 0) - (Number(it.discount) || 0);
+      // itens importados do Inforos: "valor" já é o total da linha
+      const linha = it.leg !== null && it.leg !== undefined ? Number(it.leg) || 0 : qtd * (Number(it.unit_price) || 0) - (Number(it.discount) || 0);
+      (produtos[k] ??= { qtd: 0, valor: 0 }).qtd += qtd; produtos[k].valor += linha;
     }
   }
 

@@ -232,11 +232,10 @@ export default async function Painel({ searchParams }: { searchParams: Promise<{
   const produtos: Record<string, { qtd: number; valor: number }> = {};
   const idsVenda = (vendasPer as any[]).map((v) => v.id);
   for (let i = 0; i < idsVenda.length; i += 150) {
-    const { data } = await supabase.from("sale_items").select("description,quantity,unit_price,discount,leg:legacy_data->>valor").in("sale_id", idsVenda.slice(i, i + 150));
+    const { data } = await supabase.from("sale_items").select("description,quantity,unit_price,discount").in("sale_id", idsVenda.slice(i, i + 150));
     for (const it of (data as any[]) ?? []) {
       const k = String(it.description ?? "(sem descrição)").split(" — ")[0].trim(); const qtd = Number(it.quantity) || 0;
-      // itens importados do Inforos: "valor" já é o total da linha
-      const linha = it.leg !== null && it.leg !== undefined ? Number(it.leg) || 0 : qtd * (Number(it.unit_price) || 0) - (Number(it.discount) || 0);
+      const linha = qtd * (Number(it.unit_price) || 0) - (Number(it.discount) || 0);
       (produtos[k] ??= { qtd: 0, valor: 0 }).qtd += qtd; produtos[k].valor += linha;
     }
   }

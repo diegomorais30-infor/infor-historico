@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
       }, { onConflict: "company_id,legacy_ref" }).select("id").single();
       if (error || !v) { erros.push(`venda ${ref}: ${error?.message}`); continue; }
       await db.from("sale_items").delete().eq("sale_id", v.id);
-      const itens = (d.itens ?? []).map((it: any) => ({ company_id: EMPRESA, sale_id: v.id, kind: "produto", description: [s(it.nome), s(it.descritivo)].filter(Boolean).join(" — ") || "(sem descrição)", quantity: num(it.quantidade) || 1, unit_price: num(it.valor), discount: num(it.desconto), legacy_data: it }));
+      const itens = (d.itens ?? []).map((it: any) => ({ company_id: EMPRESA, sale_id: v.id, kind: "produto", description: [s(it.nome), s(it.descritivo)].filter(Boolean).join(" — ") || "(sem descrição)", quantity: num(it.quantidade) || 1, unit_price: Math.round((num(it.valor) / (num(it.quantidade) || 1)) * 1e6) / 1e6, discount: num(it.desconto), legacy_data: it })); // no Inforos "valor" é o total da linha
       if (itens.length) { const { error: e2 } = await db.from("sale_items").insert(itens); if (e2) erros.push(`venda ${ref} itens: ${e2.message}`); }
       ok++;
     }

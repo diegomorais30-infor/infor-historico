@@ -146,8 +146,8 @@ export function Rosca({ itens, dinheiro = false, centro }: { itens: { nome: stri
 }
 
 // Barras horizontais (ranking)
-export function BarrasH({ itens, dinheiro = false, cor = "#4ea1ff" }: { itens: { nome: string; valor: number }[]; dinheiro?: boolean; cor?: string }) {
-  const max = Math.max(1, ...itens.map((i) => i.valor));
+export function BarrasH({ itens, dinheiro = false, cor = "#4ea1ff", sufixo = "", max: maxFixo }: { itens: { nome: string; valor: number }[]; dinheiro?: boolean; cor?: string; sufixo?: string; max?: number }) {
+  const max = maxFixo ?? Math.max(1, ...itens.map((i) => i.valor));
   if (!itens.length) return <div style={{ color: SUAVE }}>Sem dados.</div>;
   return (
     <div style={{ display: "grid", gap: 8 }}>
@@ -155,7 +155,7 @@ export function BarrasH({ itens, dinheiro = false, cor = "#4ea1ff" }: { itens: {
         <div key={i}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13 }}>
             <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nome}</span>
-            <b>{dinheiro ? moeda(it.valor) : it.valor}</b>
+            <b>{dinheiro ? moeda(it.valor) : `${it.valor}${sufixo}`}</b>
           </div>
           <div style={{ background: "var(--soft)", borderRadius: 4, height: 8, marginTop: 3 }}>
             <div style={{ width: `${(it.valor / max) * 100}%`, background: cor, height: 8, borderRadius: 4 }} />

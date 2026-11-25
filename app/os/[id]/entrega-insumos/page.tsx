@@ -3,7 +3,7 @@ import { getContexto } from "@/lib/contexto";
 import { fmtData, moeda } from "@/lib/format";
 import { podeVer } from "@/lib/permissoes";
 import CabecalhoEmpresa, { CAMPOS_EMPRESA } from "@/components/cabecalho-empresa";
-import BotaoImprimir from "@/components/botao-imprimir";
+import BotaoImprimir, { BotaoImprimirFlutuante } from "@/components/botao-imprimir";
 
 export default async function EntregaInsumos({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ vias?: string }> }) {
   const { id } = await params;
@@ -34,6 +34,7 @@ export default async function EntregaInsumos({ params, searchParams }: { params:
   const td: React.CSSProperties = { border: "1px solid #ddd", padding: "7px 8px", fontSize: 12.5 };
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
+      <BotaoImprimirFlutuante />
       <div className="no-print" style={{ marginBottom: 12 }}>
         <BotaoImprimir />{" "}
         <a className="btn secondary" href={`/os/${id}/imprimir`}>← Impressão da OS</a>{" "}

@@ -3,7 +3,7 @@ import { getContexto } from "@/lib/contexto";
 import { fmtData, moeda } from "@/lib/format";
 import { podeVer } from "@/lib/permissoes";
 import CabecalhoEmpresa, { CAMPOS_EMPRESA } from "@/components/cabecalho-empresa";
-import BotaoImprimir from "@/components/botao-imprimir";
+import BotaoImprimir, { BotaoImprimirFlutuante } from "@/components/botao-imprimir";
 
 export default async function ImprimirVenda({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ vias?: string }> }) {
   const { id } = await params;
@@ -27,6 +27,7 @@ export default async function ImprimirVenda({ params, searchParams }: { params: 
 
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
+      <BotaoImprimirFlutuante />
       <div className="no-print" style={{ marginBottom: 12 }}><BotaoImprimir />{" "}<a className="btn secondary" href={`/vendas/${id}/imprimir?vias=${duasVias ? "1" : "2"}`}>{duasVias ? "Uma via por folha" : "2 vias por folha"}</a></div>
       <div className={duasVias ? "vias2" : undefined}>
       {(duasVias ? ["Via da empresa", "Via do cliente"] : [null]).map((rot) => (

@@ -1,3 +1,4 @@
+import { BotaoImprimirFlutuante } from "@/components/botao-imprimir";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { getContexto } from "@/lib/contexto";
@@ -70,6 +71,7 @@ export default async function ImprimirOS({ params, searchParams }: { params: Pro
 
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
+      <BotaoImprimirFlutuante />
       <div className="no-print" style={{ marginBottom: 12 }}>
         <BotaoImprimir />{" "}
         <a className="btn secondary" href={`/os/${id}/imprimir?termos=${comTermos ? "0" : "1"}&vias=${duasVias ? "2" : "1"}`}>{comTermos ? "Ver sem termos" : "Ver com termos"}</a>{" "}

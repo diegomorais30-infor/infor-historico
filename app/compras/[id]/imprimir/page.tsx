@@ -3,7 +3,7 @@ import { getContexto } from "@/lib/contexto";
 import { fmtData, moeda } from "@/lib/format";
 import { podeVer } from "@/lib/permissoes";
 import CabecalhoEmpresa, { CAMPOS_EMPRESA } from "@/components/cabecalho-empresa";
-import BotaoImprimir from "@/components/botao-imprimir";
+import BotaoImprimir, { BotaoImprimirFlutuante } from "@/components/botao-imprimir";
 
 export default async function ImprimirCompra({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,6 +20,7 @@ export default async function ImprimirCompra({ params }: { params: Promise<{ id:
   const td: React.CSSProperties = { border: "1px solid #ddd", padding: "6px 8px", fontSize: 12.5 };
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
+      <BotaoImprimirFlutuante />
       <div className="no-print" style={{ marginBottom: 12 }}><BotaoImprimir /></div>
       <div className="doc-folha" style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box" }}>
         <CabecalhoEmpresa emp={emp as any} direita={<><div><b>#Compra:</b> {(c as any).number}</div><div>Data: {fmtData((c as any).purchased_at)}</div></>} />

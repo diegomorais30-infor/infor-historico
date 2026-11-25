@@ -406,13 +406,26 @@ async function faturar(formData: FormData) {
   const order_id = String(formData.get("order_id"));
   const { data: os } = await supabase.from("service_orders").select("status").eq("id", order_id).single();
   if (!os) redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("OS não encontrada."));
-  if (!["concluido", "faturado"].includes((os as any).status))
-    redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("Conclua a OS antes de faturar."));
+  if (["cancelado", "finalizado"].includes((os as any).status))
+    redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent("Esta OS está cancelada ou já finalizada."));
   const r = await gerarFinanceiroOs(supabase, order_id);
   if (r.erro) redirect(`/os/${order_id}?aba=itens&erro=` + encodeURIComponent(r.erro));
   await supabase.from("service_orders").update({ status: "faturado" }).eq("id", order_id);
   revalidatePath(`/os/${order_id}`);
   redirect(`/os/${order_id}?aba=itens&ok=1`);
+}
+
+async function finalizarOs(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const order_id = String(formData.get("order_id"));
+  const { data: os } = await supabase.from("service_orders").select("status").eq("id", order_id).single();
+  if (!os || (os as any).status === "cancelado") redirect(`/os/${order_id}?erro=` + encodeURIComponent("OS não pode ser finalizada."));
+  const { error } = await supabase.from("service_orders").update({ status: "finalizado" }).eq("id", order_id);
+  if (error) redirect(`/os/${order_id}?erro=` + encodeURIComponent(error.message));
+  await registrar(supabase, order_id, `Status alterado de <b>${STATUS_OS[(os as any).status] ?? (os as any).status}</b> para <b>Finalizado</b>`);
+  revalidatePath(`/os/${order_id}`);
+  redirect(`/os/${order_id}?aba=detalhes&ok=1`);
 }
 
 async function adicionarAtividade(formData: FormData) {
@@ -831,6 +844,12 @@ export default async function DetalheOS({
                         <button className="btn os-b-roxo">💵 Faturar</button>
                       </form>
                     )}
+                    {o.status !== "finalizado" && o.status !== "cancelado" && (
+                      <form action={finalizarOs} style={{ display: "inline" }}>
+                        <input type="hidden" name="order_id" value={o.id} />
+                        <button className="btn os-b-verde">✅ Finalizar</button>
+                      </form>
+                    )}
                   </>
                 )}
               </div>
@@ -1153,7 +1172,7 @@ export default async function DetalheOS({
                 {editFin && <div style={{ gridColumn: "1/-1" }}><button className="btn primary">Salvar valores</button></div>}
               </form>
             )}
-            {editFin && o.status === "concluido" && (
+            {editFin && !["faturado","finalizado","cancelado"].includes(o.status) && (
               <form action={faturar} className="os-bloco" style={{ marginTop: 14 }}>
                 <input type="hidden" name="order_id" value={o.id} />
                 <b>Faturar esta OS</b>

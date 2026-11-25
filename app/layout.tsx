@@ -120,6 +120,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/checklist", "Checklist", "☑️", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),
         M("/tags", "Tags", "🏷️", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),
         M("/anexos", "Anexos", "📎", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),
+        M("/whatsapp", "WhatsApp", "💬", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),
         M("/parametros", "Parâmetros", "🎛️", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),
         M("/painel", "Painel de gestão", "🧭", papel === "admin", { secao: G }),
       ].filter(Boolean) as ItemMenu[])

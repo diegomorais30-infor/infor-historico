@@ -38,6 +38,16 @@ function voltar(id: string, aba: string, extra = "") {
   return `/os/${id}?aba=${aba || "detalhes"}${extra}`;
 }
 
+const PROXIMO_PASSO: Record<string, string> = {
+  entrada: "confira os dados e mude o status para Aberto (ou Orçamento, se precisar aprovar antes).",
+  orcamento: "envie o orçamento ao cliente; quando aprovado, mude para Aberto.",
+  aberto: "atribua o técnico e mude para Em andamento.",
+  andamento: "técnico: lance peças/serviços na aba Itens e mude para Concluído. Se já foi pago ou precisa cobrar, use 💵 Faturar.",
+  pausado: "resolva o motivo da pausa (peça, resposta do cliente) e volte para Em andamento.",
+  concluido: "financeiro: confira os valores na aba Itens e clique em 💵 Faturar.",
+  faturado: "aguardando pagamento. Ao marcar a receita como paga no Financeiro, a OS finaliza sozinha. Se já foi pago fora do sistema, clique em ✅ Finalizar.",
+};
+
 async function registrar(supabase: any, order_id: string, text: string) {
   const { data: u } = await supabase.auth.getUser();
   let nome: string | null = null;
@@ -681,6 +691,20 @@ export default async function DetalheOS({
                   ))}
                 </div>
                 <div className="os-barra"><i style={{ width: `${progresso}%` }} /><em>{progresso}%</em></div>
+                {PROXIMO_PASSO[o.status] && (
+                  <div className="os-dica">
+                    <b>👉 Próximo passo:</b> {PROXIMO_PASSO[o.status]}
+                    <details><summary>Fluxo completo</summary>
+                      <ol>
+                        <li><b>Entrada → Aberto:</b> atendente confere cliente, equipamento e defeito.</li>
+                        <li><b>Em andamento → Concluído:</b> técnico executa o serviço, lança peças/serviços na aba <b>Itens</b> e muda o status.</li>
+                        <li><b>Faturar:</b> financeiro confere os valores (aba Itens → Valores), clica em <b>💵 Faturar</b> e a receita é gerada. Pode faturar em qualquer etapa.</li>
+                        <li><b>Finalizado:</b> some sozinho quando o pagamento é marcado como recebido no Financeiro. Se o cliente pagou fora do sistema, use <b>✅ Finalizar</b>.</li>
+                      </ol>
+                      <p>Se aparecer erro ao faturar: "Lance os valores" = falta preço nos itens; sem permissão = peça ao administrador para liberar o Financeiro.</p>
+                    </details>
+                  </div>
+                )}
               </div>
             )}
             <h2 className="os-num">#Ordem de Serviço: {o.number}</h2>

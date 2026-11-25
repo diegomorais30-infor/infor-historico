@@ -425,3 +425,9 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
   .vias2 .via{break-inside:avoid;page-break-inside:avoid;min-height:0 !important}
 }
 @media screen{.vias2 .via{border-bottom:1px solid #ccc}}
+
+.os-dica{margin-top:10px;padding:10px 12px;border-radius:8px;background:#fff8e1;border:1px solid #f0d98a;color:#5b4a00;font-size:14px}
+.os-dica summary{cursor:pointer;margin-top:6px;font-weight:600}
+.os-dica ol{margin:6px 0 4px 18px;padding:0}
+.os-dica p{margin:4px 0 0}
+@media print{.os-dica{display:none}}

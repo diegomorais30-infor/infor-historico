@@ -5,6 +5,17 @@ import { useEffect, useMemo, useState } from "react";
 
 export type ItemMenu = { href: string; nome: string; icone: string; badge?: number; grupo?: string; sub?: boolean; secao?: string; contagem?: number };
 
+// Ícone de item: emoji, ou "whatsapp" para o logotipo do WhatsApp.
+function Ico({ v }: { v: string }) {
+  if (v !== "whatsapp") return <>{v}</>;
+  return (
+    <svg viewBox="0 0 24 24" width="1.15em" height="1.15em" style={{ verticalAlign: "-0.2em" }} aria-hidden>
+      <path fill="#25D366" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2z" />
+      <path fill="#fff" d="M16.6 14.4c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.8 1c-.1.2-.3.2-.5.1a6.6 6.6 0 0 1-3.3-2.9c-.2-.4.2-.4.6-1.2.1-.1 0-.3 0-.4l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.2.3-.8.8-.8 2s.9 2.3 1 2.5c.1.2 1.7 2.6 4.1 3.6 1.5.6 2.1.7 2.8.6.4-.1 1.4-.6 1.6-1.1.2-.6.2-1 .1-1.1-.1-.1-.3-.2-.5-.3z" />
+    </svg>
+  );
+}
+
 const GRUPO_ICONE: Record<string, string> = {
   Produtos: "📦",
   Orçamentos: "📝",
@@ -78,7 +89,7 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
             {achados.length === 0 && <span className="muted" style={{ padding: "8px 12px", fontSize: 12 }}>Nada encontrado</span>}
             {achados.map((i, idx) => (
               <Link key={i.href + idx} href={i.href} onClick={() => { setAberto(false); setQ(""); }} className={ativoItem(i) ? "ativo" : ""}>
-                <span className="ico" aria-hidden>{i.icone}</span>
+                <span className="ico" aria-hidden><Ico v={i.icone} /></span>
                 <span>{i.nome}{i.grupo ? <small className="muted"> · {i.grupo}</small> : null}</span>
               </Link>
             ))}
@@ -109,7 +120,7 @@ export default function MenuLateral({ itens, logo }: { itens: ItemMenu[]; logo: 
               {!oculto && (
                 <Link href={i.href} onClick={() => setAberto(false)} className={(ativo ? "ativo" : "") + (i.sub ? " sub" : "")}>
                   <span className="ico" aria-hidden>
-                    {i.icone}
+                    <Ico v={i.icone} />
                   </span>
                   <span>{i.nome}</span>
                   {!!i.badge && <span className="pill">{i.badge}</span>}

@@ -4,10 +4,12 @@ import { fmtData, moeda } from "@/lib/format";
 import { podeVer } from "@/lib/permissoes";
 import CabecalhoEmpresa, { CAMPOS_EMPRESA } from "@/components/cabecalho-empresa";
 import BotaoImprimir, { BotaoImprimirFlutuante } from "@/components/botao-imprimir";
+import AutoImprimir from "@/components/auto-imprimir";
 
-export default async function ImprimirVenda({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ vias?: string }> }) {
+export default async function ImprimirVenda({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ vias?: string; auto?: string }> }) {
   const { id } = await params;
-  const duasVias = (await searchParams).vias !== "1";
+  const spv = await searchParams;
+  const duasVias = spv.vias !== "1";
   const { supabase, perfil } = await getContexto();
   if (!podeVer(perfil?.role, (perfil as any)?.permissions, "vendas")) notFound();
   const { data: v } = await supabase
@@ -28,6 +30,7 @@ export default async function ImprimirVenda({ params, searchParams }: { params: 
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
       <BotaoImprimirFlutuante />
+      {spv.auto === "1" && <AutoImprimir />}
       <div className="no-print" style={{ marginBottom: 12 }}><BotaoImprimir />{" "}<a className="btn secondary" href={`/vendas/${id}/imprimir?vias=${duasVias ? "1" : "2"}`}>{duasVias ? "Uma via por folha" : "2 vias por folha"}</a></div>
       <div className={duasVias ? "vias2" : undefined}>
       {(duasVias ? ["Via da empresa", "Via do cliente"] : [null]).map((rot) => (

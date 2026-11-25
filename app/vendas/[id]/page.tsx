@@ -211,7 +211,7 @@ export default async function Venda({ params, searchParams }: { params: Promise<
   const sub = (itens ?? []).reduce((s: number, i: any) => s + Number(i.quantity) * Number(i.unit_price) - Number(i.discount), 0);
   return (
     <main className="wrap" style={{ maxWidth: 900 }}>
-      <Link href="/vendas" className="btn secondary">← Vendas</Link>{" "}<Link href={`/vendas/${id}/imprimir`} className="btn secondary">🖨 Imprimir</Link>
+      <Link href="/vendas" className="btn secondary">← Vendas</Link>{" "}<Link href={`/vendas/${id}/imprimir?auto=1`} className="btn secondary">🖨 Imprimir</Link>
       <h1 className="title" style={{ marginTop: 10 }}>Venda #{v.number}</h1>
       {erro && <div className="error" style={{ margin: "10px 0" }}>{erro}</div>}
       <section className="card">

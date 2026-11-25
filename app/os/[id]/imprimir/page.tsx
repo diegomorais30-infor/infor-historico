@@ -1,4 +1,5 @@
 import { BotaoImprimirFlutuante } from "@/components/botao-imprimir";
+import AutoImprimir from "@/components/auto-imprimir";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { getContexto } from "@/lib/contexto";
@@ -11,7 +12,7 @@ import BotaoImprimir from "./botao";
 const dataHora = (v: string | null | undefined) =>
   v ? new Date(v).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
-export default async function ImprimirOS({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ termos?: string; vias?: string }> }) {
+export default async function ImprimirOS({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ termos?: string; vias?: string; auto?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
   const comTermos = sp.termos !== "0";
@@ -72,6 +73,7 @@ export default async function ImprimirOS({ params, searchParams }: { params: Pro
   return (
     <main className="wrap" style={{ maxWidth: 820 }}>
       <BotaoImprimirFlutuante />
+      {sp.auto === "1" && <AutoImprimir />}
       <div className="no-print" style={{ marginBottom: 12 }}>
         <BotaoImprimir />{" "}
         <a className="btn secondary" href={`/os/${id}/imprimir?termos=${comTermos ? "0" : "1"}&vias=${duasVias ? "2" : "1"}`}>{comTermos ? "Ver sem termos" : "Ver com termos"}</a>{" "}

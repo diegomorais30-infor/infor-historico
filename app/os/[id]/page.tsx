@@ -795,6 +795,7 @@ export default async function DetalheOS({
               <Link className="btn secondary" href="/os"><span>↩</span> Voltar</Link>
               <div className="os-acoes-meio">
                 <Link className="btn os-b-azul" href={`/os/${o.id}/imprimir`}>👁 Visualizar OS</Link>
+                <Link className="btn os-b-verde" href={`/os/${o.id}/imprimir?auto=1`}>🖨 Imprimir</Link>
                 {editFin && (
                   <>
                     <details className="os-acao">

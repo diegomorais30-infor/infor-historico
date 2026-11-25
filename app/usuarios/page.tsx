@@ -207,6 +207,37 @@ async function alternarAtivo(formData: FormData) {
   redirect("/usuarios");
 }
 
+async function redefinirSenha(formData: FormData) {
+  "use server";
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: eu } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (eu?.role !== "admin") redirect("/usuarios?erro=" + encodeURIComponent("Só o administrador redefine senhas."));
+  const id = String(formData.get("id") || "");
+  const senha = String(formData.get("senha") || "");
+  const falha = (m: string) => redirect("/usuarios?erro=" + encodeURIComponent(m));
+  if (senha.length < 8) falha("A senha provisória precisa ter pelo menos 8 caracteres.");
+  // só pessoas da mesma empresa (as regras do banco limitam a lista ao time)
+  const { data: alvo } = await supabase.from("profiles").select("id, full_name").eq("id", id).maybeSingle();
+  if (!alvo) falha("Usuário não encontrado.");
+  let erroSenhaMsg = "";
+  try {
+    const admin = createAdminClient();
+    const { data: u } = await admin.auth.admin.getUserById(id);
+    const { error } = await admin.auth.admin.updateUserById(id, {
+      password: senha,
+      user_metadata: { ...(u?.user?.user_metadata ?? {}), must_change_password: true },
+    });
+    if (error) erroSenhaMsg = error.message;
+  } catch (e) {
+    erroSenhaMsg = String((e as Error)?.message ?? e);
+  }
+  if (erroSenhaMsg) falha("Não foi possível redefinir: " + erroSenha(erroSenhaMsg));
+  revalidatePath("/usuarios");
+  redirect("/usuarios?ok=" + encodeURIComponent(`Senha provisória de ${alvo!.full_name} redefinida. Passe a ela; no próximo acesso será pedida uma senha nova.`));
+}
+
 export default async function Usuarios({ searchParams }: { searchParams: Promise<{ erro?: string; ok?: string; email?: string }> }) {
   const { erro, ok, email: statusEmail } = await searchParams;
   const { supabase, user, perfil } = await getContexto();
@@ -390,6 +421,15 @@ export default async function Usuarios({ searchParams }: { searchParams: Promise
                   <span className={p.active ? "badge" : "badge warn"}>{p.active ? "Ativo" : "Desativado"}</span>
                 </td>
                 <td>
+                  <details style={{ marginBottom: 6 }}>
+                    <summary className="muted" style={{ cursor: "pointer" }}>🔑 Redefinir senha</summary>
+                    <form action={redefinirSenha} style={{ display: "grid", gap: 6, marginTop: 6, minWidth: 200 }}>
+                      <input type="hidden" name="id" value={p.id} />
+                      <input name="senha" type="text" required minLength={8} autoComplete="off" placeholder="Nova senha provisória" />
+                      <span className="muted" style={{ fontSize: 12 }}>Mínimo 8 caracteres, com letras, números e símbolo. No próximo acesso a pessoa define a senha dela.</span>
+                      <button className="btn secondary">Salvar senha provisória</button>
+                    </form>
+                  </details>
                   {p.id !== user.id && (
                     <form action={alternarAtivo}>
                       <input type="hidden" name="id" value={p.id} />

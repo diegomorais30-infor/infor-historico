@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getContexto } from "@/lib/contexto";
 import { podeVer } from "@/lib/permissoes";
 import { fmtData, moeda } from "@/lib/format";
@@ -7,6 +8,8 @@ import { tudo } from "@/lib/paginar";
 export default async function Relatorios() {
   const { supabase, perfil } = await getContexto();
   const verFin = podeVer(perfil?.role, (perfil as any)?.permissions, "financeiro");
+  // quem não tem acesso ao financeiro não vê esta visão geral (contas em atraso)
+  if (!verFin) redirect("/relatorios/os");
   const hoje = new Date().toISOString().slice(0, 10);
   const atrasados = verFin
     ? await tudo(() => supabase.from("finance_entries").select("id, description, party, amount, due_date, clients(name)").eq("kind", "receita").is("paid_at", null).lt("due_date", hoje).order("due_date"))

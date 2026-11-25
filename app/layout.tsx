@@ -112,7 +112,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         M("/relatorios/os", "Ordens de Serviço", "🛠️", true, { grupo: "Relatórios", sub: true, secao: G }),
         M("/relatorios/vendas", "Vendas", "🧾", v("financeiro"), { grupo: "Relatórios", sub: true, secao: G }),
         M("/relatorios/financeiro", "Financeiro", "💰", v("financeiro"), { grupo: "Relatórios", sub: true, secao: G }),
-        M("/relatorios", "Contas em atraso / visão geral", "🗒️", true, { grupo: "Relatórios", sub: true, secao: G }),
+        M("/relatorios", "Contas em atraso / visão geral", "🗒️", v("financeiro"), { grupo: "Relatórios", sub: true, secao: G }),
         M("/emitente", "Emitente", "🏢", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),
         M("/filiais", "Filiais", "🏬", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),
         M("/usuarios", "Usuários e permissões", "⚙️", papel === "admin", { grupo: "Configurações", sub: true, secao: G }),

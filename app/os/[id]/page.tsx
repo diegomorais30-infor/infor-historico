@@ -394,17 +394,19 @@ async function gerarFinanceiroOs(supabase: any, order_id: string): Promise<{ err
     payment_method: f.payment_method ?? null,
     competence: hoje,
   };
-  if (resto > 0) {
-    const { error } = await supabase.from("finance_entries").upsert(
-      { ...base, origin: "os_fatura", description: `OS #${o.number} · fatura`, amount: resto, due_date: f.due_date ?? hoje },
-      { onConflict: "order_id,origin", ignoreDuplicates: true }
+  const jaTem = async (origin: string) => {
+    const { count } = await supabase.from("finance_entries").select("*", { count: "exact", head: true }).eq("order_id", order_id).eq("origin", origin);
+    return !!count;
+  };
+  if (resto > 0 && !(await jaTem("os_fatura"))) {
+    const { error } = await supabase.from("finance_entries").insert(
+      { ...base, origin: "os_fatura", description: `OS #${o.number} · fatura`, amount: resto, due_date: f.due_date ?? hoje }
     );
     if (error) return { erro: error.message, total };
   }
-  if (adiant > 0) {
-    await supabase.from("finance_entries").upsert(
-      { ...base, origin: "os_adiantamento", description: `OS #${o.number} · adiantamento`, amount: adiant, due_date: hoje, paid_at: hoje },
-      { onConflict: "order_id,origin", ignoreDuplicates: true }
+  if (adiant > 0 && !(await jaTem("os_adiantamento"))) {
+    await supabase.from("finance_entries").insert(
+      { ...base, origin: "os_adiantamento", description: `OS #${o.number} · adiantamento`, amount: adiant, due_date: hoje, paid_at: hoje }
     );
   }
   return { total };

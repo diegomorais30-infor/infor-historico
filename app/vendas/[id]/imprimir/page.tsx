@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AjusteVias } from "@/components/ajuste-vias";
 import { getContexto } from "@/lib/contexto";
 import { fmtData, moeda } from "@/lib/format";
 import { podeVer } from "@/lib/permissoes";
@@ -32,6 +33,7 @@ export default async function ImprimirVenda({ params, searchParams }: { params: 
       <BotaoImprimirFlutuante />
       {spv.auto === "1" && <AutoImprimir />}
       <div className="no-print" style={{ marginBottom: 12 }}><BotaoImprimir />{" "}<a className="btn secondary" href={`/vendas/${id}/imprimir?vias=${duasVias ? "1" : "2"}`}>{duasVias ? "Uma via por folha" : "2 vias por folha"}</a></div>
+      {duasVias && <AjusteVias larguraMm={186} alturaMm={135} />}
       <div className={duasVias ? "vias2" : undefined}>
       {(duasVias ? ["Via da empresa", "Via do cliente"] : [null]).map((rot) => (
       <div key={rot ?? "u"} className={`doc-folha${duasVias ? " via" : ""}`} style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box" }}>

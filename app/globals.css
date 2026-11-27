@@ -421,7 +421,7 @@ input,select,textarea,button{font-family:inherit;font-size:13px}
 .vias2 .via-rotulo{position:absolute;top:2mm;right:4mm;font:700 9px Arial,sans-serif;color:#555;text-transform:uppercase;letter-spacing:.08em}
 .vias2 .via + .via{border-top:1px dashed #777}
 @media print{
-  .vias2{zoom:.62}
+  .vias2{zoom:var(--zv,.62)}
   .vias2 .via{break-inside:avoid;page-break-inside:avoid;min-height:0 !important}
 }
 @media screen{.vias2 .via{border-bottom:1px solid #ccc}}

@@ -1,4 +1,5 @@
 import { BotaoImprimirFlutuante } from "@/components/botao-imprimir";
+import { AjusteVias } from "@/components/ajuste-vias";
 import AutoImprimir from "@/components/auto-imprimir";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
@@ -80,6 +81,7 @@ export default async function ImprimirOS({ params, searchParams }: { params: Pro
         <a className="btn secondary" href={`/os/${id}/imprimir?termos=${comTermos ? "1" : "0"}&vias=${duasVias ? "1" : "2"}`}>{duasVias ? "Uma via por folha" : "2 vias por folha"}</a>{" "}
         <a className="btn secondary" href={`/os/${id}/entrega-insumos`}>Entrega de insumos</a>
       </div>
+      {duasVias && <AjusteVias larguraMm={208} alturaMm={146} />}
       <div className={`os-folha${duasVias ? " vias2" : ""}`}>
         {(duasVias ? ["Via da empresa", "Via do cliente"] : [null]).map((rot) => (
         <section key={rot ?? "u"} className={duasVias ? "via" : undefined} style={{ background: "#fff", color: "#000", padding: "10mm 12mm", fontFamily: "Arial, Helvetica, sans-serif", boxSizing: "border-box", minHeight: duasVias ? undefined : "277mm", display: "flex", flexDirection: "column" }}>
